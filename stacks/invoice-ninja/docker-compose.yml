@@ -1,0 +1,92 @@
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  app:
+    image: invoiceninja/invoiceninja-debian:5.13.31
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - app_public:/var/www/html/public:rw
+      - app_storage:/var/www/html/storage:rw
+    networks:
+      - app
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    logging: *logging
+
+  nginx:
+    image: nginx:1.31.3-alpine
+    restart: unless-stopped
+    volumes:
+      - ./nginx/in-vhost.conf:/etc/nginx/conf.d/in-vhost.conf:ro
+      - app_public:/var/www/html/public:ro
+      - app_storage:/var/www/html/storage:ro
+    networks:
+      - app
+      - proxy
+    depends_on:
+      - app
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.invoice-ninja.rule=Host(`invoices.${DOMAIN_NAME}`)
+      - traefik.http.routers.invoice-ninja.entrypoints=websecure
+      - traefik.http.routers.invoice-ninja.tls=true
+      - traefik.http.routers.invoice-ninja.tls.certresolver=letsencrypt
+      - traefik.http.services.invoice-ninja.loadbalancer.server.port=80
+      - traefik.docker.network=proxy
+    logging: *logging
+
+  mysql:
+    image: mysql:8.4.11
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - app
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u${DB_USERNAME}", "-p${DB_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging: *logging
+
+  redis:
+    image: redis:8.10.0-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    networks:
+      - app
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging: *logging
+
+volumes:
+  app_public:
+  app_storage:
+  mysql_data:
+  redis_data:
+
+networks:
+  app:
+    driver: bridge
+    internal: true
+  proxy:
+    name: proxy
+    external: true
