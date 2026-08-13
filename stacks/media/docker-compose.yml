@@ -1,0 +1,117 @@
+version: "3.5"
+name: media
+
+services:
+  transmission:
+    image: linuxserver/transmission:4.0.6
+    container_name: transmission
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Ljubljana
+      - USER=${TRANSMISSION_USER}
+      - PASS=${TRANSMISSION_PASS}
+    volumes:
+      - tx-config:/config
+      - tx-watch:/watch
+      - downloads:/downloads
+    ports:
+      - 51413:51413 # torrent peer port
+    networks:
+      - media
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.transmission.rule=Host(`transmission.${DOMAIN_NAME}`)
+      - traefik.http.routers.transmission.entrypoints=websecure
+      - traefik.http.routers.transmission.service=transmission
+      - traefik.http.routers.transmission.tls=true
+      - traefik.http.routers.transmission.tls.certresolver=letsencrypt
+      - traefik.http.services.transmission.loadbalancer.server.port=9091
+
+  prowlarr:
+    image: linuxserver/prowlarr:2.3.0
+    container_name: prowlarr
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Ljubljana
+    volumes:
+      - prowlarr-config:/config
+    networks:
+      - media
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.prowlarr.rule=Host(`prowlarr.${DOMAIN_NAME}`)
+      - traefik.http.routers.prowlarr.entrypoints=websecure
+      - traefik.http.routers.prowlarr.service=prowlarr
+      - traefik.http.routers.prowlarr.tls=true
+      - traefik.http.routers.prowlarr.tls.certresolver=letsencrypt
+      - traefik.http.services.prowlarr.loadbalancer.server.port=9696
+
+  sonarr:
+    image: linuxserver/sonarr:4.0.16-develop
+    container_name: sonarr
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Ljubljana
+    volumes:
+      - sonarr-config:/config
+      - downloads:/downloads
+    networks:
+      - media
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.sonarr.rule=Host(`sonarr.${DOMAIN_NAME}`)
+      - traefik.http.routers.sonarr.entrypoints=websecure
+      - traefik.http.routers.sonarr.service=sonarr
+      - traefik.http.routers.sonarr.tls=true
+      - traefik.http.routers.sonarr.tls.certresolver=letsencrypt
+      - traefik.http.services.sonarr.loadbalancer.server.port=8989
+
+  radarr:
+    image: lscr.io/linuxserver/radarr:6.0.4
+    container_name: radarr
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Ljubljana
+    volumes:
+      - radarr-config:/config
+      - downloads:/downloads
+    networks:
+      - media
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.radarr.rule=Host(`radarr.${DOMAIN_NAME}`)
+      - traefik.http.routers.radarr.entrypoints=websecure
+      - traefik.http.routers.radarr.service=radarr
+      - traefik.http.routers.radarr.tls=true
+      - traefik.http.routers.radarr.tls.certresolver=letsencrypt
+      - traefik.http.services.radarr.loadbalancer.server.port=7878
+
+volumes:
+  downloads:
+  tx-config:
+  tx-watch:
+  sonarr-config:
+  radarr-config:
+  prowlarr-config:
+
+networks:
+  media:
+    internal: true
+  proxy:
+    external: true

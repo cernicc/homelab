@@ -1,0 +1,12 @@
+[Unit]
+Description=Homelab Cron Service
+ConditionPathExists=!%h/homelab/.working
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/homelab
+ExecStartPre=/usr/bin/git pull origin master
+ExecStart=/usr/bin/systemctl --user reload docker-compose@*.service
+
+[Install]
+WantedBy=default.target

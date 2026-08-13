@@ -1,0 +1,73 @@
+version: "3.5"
+
+services:
+  traefik:
+    container_name: traefik
+    image: "traefik:v3.7.10"
+    restart: unless-stopped
+    environment:
+      - CF_API_EMAIL=${CF_API_EMAIL}
+      - CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN}
+    command:
+      - --global.checkNewVersion=true
+      - --global.sendAnonymousUsage=false
+
+      - --api.dashboard=true
+
+      # access logs
+      - --accesslog=true
+      - --accesslog.filePath=/var/log/traefik/access.log
+
+      - --serversTransport.insecureSkipVerify=true
+
+      # private listeners (internal services)
+      - --entryPoints.web.address=:80
+      - --entryPoints.web.http.redirections.entryPoint.to=websecure
+      - --entryPoints.web.http.redirections.entryPoint.scheme=https
+      - --entryPoints.websecure.address=:443
+      - --entryPoints.websecure.http.tls=true
+      - --entryPoints.websecure.http.tls.certResolver=letsencrypt
+
+      # let's encrypt via cloudflare DNS challenge
+      - --certificatesresolvers.letsencrypt.acme.email=${CF_API_EMAIL}
+      - --certificatesresolvers.letsencrypt.acme.storage=/ssl-certs/acme.json
+      - --certificatesresolvers.letsencrypt.acme.dnschallenge=true
+      - --certificatesresolvers.letsencrypt.acme.dnschallenge.provider=cloudflare
+      - --certificatesresolvers.letsencrypt.acme.dnschallenge.delaybeforecheck=0
+      - --certificatesresolvers.letsencrypt.acme.dnschallenge.resolvers=1.1.1.1:53,8.8.8.8:53
+
+      # docker label-based routing
+      - --providers.docker=true
+      - --providers.docker.exposedByDefault=false
+      - --providers.docker.network=proxy
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ssl-certs:/ssl-certs
+      - logs:/var/log/traefik
+    security_opt:
+      - label=disable
+    networks:
+      - proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.dashboard.rule=Host(`traefik.${DOMAIN_NAME}`)
+      - traefik.http.routers.dashboard.service=api@internal
+      - traefik.http.routers.dashboard.entrypoints=websecure
+      - traefik.http.routers.dashboard.tls=true
+      - traefik.http.routers.dashboard.tls.certresolver=letsencrypt
+    extra_hosts:
+      - "host.docker.internal:172.17.0.1"
+
+volumes:
+  ssl-certs:
+    driver: local
+  logs:
+    driver: local
+
+networks:
+  proxy:
+    name: proxy
+    driver: bridge

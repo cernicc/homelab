@@ -1,0 +1,8 @@
+[copr:copr.fedorainfracloud.org:ganto:lxc4]
+baseurl = https://download.copr.fedorainfracloud.org/results/ganto/lxc4/fedora-$releasever-$basearch/
+enabled = 1
+gpgcheck = 1
+gpgkey = https://download.copr.fedorainfracloud.org/results/ganto/lxc4/pubkey.gpg
+name = Copr repo for lxc4 owned by ganto
+repo_gpgcheck = 0
+skip_if_unavailable = 1
