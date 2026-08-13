@@ -1,0 +1,95 @@
+variant: fcos
+version: 1.5.0
+passwd:
+  users:
+    - name: cernic
+      groups:
+        - wheel
+        - sudo
+      ssh_authorized_keys:
+        - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIObOsA5oUCSLkwXE15Fdxf0BD2hQMGMCbdnDW1oZHshV lightweight-machine
+boot_device:
+  layout: x86_64
+  luks:
+    tpm2: true
+storage:
+  directories:
+    - path: /etc/ucore-autorebase
+      mode: 0754
+
+  files:
+    - path: /etc/hostname
+      mode: 0644
+      contents:
+        inline: alfred
+
+    - path: /etc/pki/containers/cernicc-homelab.pub
+      mode: 0644
+      contents:
+        inline: |
+          -----BEGIN PUBLIC KEY-----
+          MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEjk7pDi62rWPH30Gq18vuu1mqqU6z
+          HZ98WNJTTiBnmR7pqGRvddWH3xL5Dzi7uYFiwiMn8KzxolrvPHj3aWsx+w==
+          -----END PUBLIC KEY-----
+
+    - path: /etc/containers/policy.json
+      mode: 0644
+      contents:
+        inline: |
+          {
+            "default": [{"type": "insecureAcceptAnything"}],
+            "transports": {
+              "docker": {
+                "ghcr.io/cernicc/ucore-server": [
+                  {
+                    "type": "sigstoreSigned",
+                    "keyPath": "/etc/pki/containers/cernicc-homelab.pub",
+                    "signedIdentity": {"type": "matchRepository"}
+                  }
+                ]
+              }
+            }
+          }
+
+  links:
+    - path: /etc/localtime
+      target: ../usr/share/zoneinfo/Europe/Ljubljana
+
+systemd:
+  units:
+    - name: ucore-unsigned-autorebase.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=uCore autorebase to unsigned OCI and reboot
+        ConditionPathExists=!/etc/ucore-autorebase/unverified
+        ConditionPathExists=!/etc/ucore-autorebase/signed
+        After=network-online.target
+        Wants=network-online.target
+        [Service]
+        Type=oneshot
+        StandardOutput=journal+console
+        ExecStart=/usr/bin/rpm-ostree rebase --bypass-driver ostree-unverified-registry:ghcr.io/cernicc/ucore-server:latest
+        ExecStart=/usr/bin/touch /etc/ucore-autorebase/unverified
+        ExecStart=/usr/bin/systemctl disable ucore-unsigned-autorebase.service
+        ExecStart=/usr/bin/systemctl reboot
+        [Install]
+        WantedBy=multi-user.target
+    - name: ucore-signed-autorebase.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=uCore autorebase to signed OCI and reboot
+        ConditionPathExists=/etc/ucore-autorebase/unverified
+        ConditionPathExists=!/etc/ucore-autorebase/signed
+        After=network-online.target
+        Wants=network-online.target
+        [Service]
+        Type=oneshot
+        StandardOutput=journal+console
+        ExecStart=/usr/bin/rpm-ostree rebase --bypass-driver ostree-image-signed:docker://ghcr.io/cernicc/ucore-server:latest
+        ExecStart=/usr/bin/touch /etc/ucore-autorebase/signed
+        ExecStart=/usr/bin/systemctl disable ucore-signed-autorebase.service
+        ExecStart=/usr/bin/systemctl reboot
+        [Install]
+        WantedBy=multi-user.target
