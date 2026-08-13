@@ -16,6 +16,58 @@ To install uCore on a new machine:
 sudo coreos-installer install --ignition-url https://github.com/cernicc/homelab/raw/main/ignition/alfred.ign /dev/sdX
 ```
 
+## Provisioning a new machine
+
+### 1. Boot from Fedora CoreOS ISO
+
+Download the ISO and burn it to a USB drive or mount it via IPMI/KVM:
+
+```bash
+podman run --security-opt label=disable --pull=always --rm -v .:/data -w /data \
+    quay.io/coreos/coreos-installer:release download -s stable -p metal -f iso
+```
+
+### 2. Install
+
+Boot from the ISO and run:
+
+```bash
+sudo coreos-installer install --ignition-url https://github.com/cernicc/homelab/raw/main/ignition/alfred.ign /dev/sdX
+```
+
+Then reboot. The machine will automatically rebase to the custom image and reboot twice, then apply dotfiles and start all stacks. No further SSH needed.
+
+### 3. Enroll secure boot keys
+
+After the reboots complete, enroll the ublue akmods key (required for Nvidia drivers):
+
+```bash
+sudo mokutil --import /etc/pki/akmods/certs/akmods-ublue.der
+sudo reboot
+```
+
+During reboot you will be prompted to enroll the key — select `Enroll MOK` and confirm.
+
+### 4. Connect to Tailscale
+
+```bash
+sudo tailscale up
+```
+
+Follow the URL printed to authenticate the machine to your tailnet.
+
+### 5. Open firewall ports
+
+```bash
+sudo firewall-cmd --add-port=80/tcp --add-port=443/tcp
+sudo firewall-cmd --zone=FedoraServer --add-interface=tailscale0
+sudo firewall-cmd --runtime-to-permanent
+```
+
+### 6. Configure DNS
+
+Point your domain's DNS records to the machine's IP. Services will be available at `<service>.yourdomain.com` as configured in Traefik.
+
 ## Stacks
 
 Stacks are managed as systemd user services via the `docker-compose@.service` template. Each stack maps to a directory under `stacks/` containing a `docker-compose.yml`.

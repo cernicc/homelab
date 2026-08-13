@@ -71,3 +71,7 @@ networks:
   proxy:
     name: proxy
     driver: bridge
+  internal:
+    name: internal
+    driver: bridge
+    internal: true

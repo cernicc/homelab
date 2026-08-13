@@ -57,6 +57,8 @@ storage:
 
 systemd:
   units:
+    - name: tailscaled.service
+      enabled: true
     - name: ucore-unsigned-autorebase.service
       enabled: true
       contents: |
@@ -91,5 +93,23 @@ systemd:
         ExecStart=/usr/bin/touch /etc/ucore-autorebase/signed
         ExecStart=/usr/bin/systemctl disable ucore-signed-autorebase.service
         ExecStart=/usr/bin/systemctl reboot
+        [Install]
+        WantedBy=multi-user.target
+    - name: homelab-bootstrap.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Bootstrap homelab dotfiles via chezmoi
+        ConditionPathExists=/etc/ucore-autorebase/signed
+        ConditionPathExists=!/etc/ucore-autorebase/bootstrapped
+        After=network-online.target
+        Wants=network-online.target
+        [Service]
+        Type=oneshot
+        StandardOutput=journal+console
+        ExecStart=/usr/sbin/loginctl enable-linger cernic
+        ExecStart=/usr/bin/runuser -l cernic -c '/usr/bin/chezmoi init --apply https://github.com/cernicc/homelab'
+        ExecStart=/usr/bin/touch /etc/ucore-autorebase/bootstrapped
+        ExecStart=/usr/bin/systemctl disable homelab-bootstrap.service
         [Install]
         WantedBy=multi-user.target

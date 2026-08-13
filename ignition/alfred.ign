@@ -86,6 +86,11 @@
         "contents": "[Unit]\nDescription=uCore autorebase to signed OCI and reboot\nConditionPathExists=/etc/ucore-autorebase/unverified\nConditionPathExists=!/etc/ucore-autorebase/signed\nAfter=network-online.target\nWants=network-online.target\n[Service]\nType=oneshot\nStandardOutput=journal+console\nExecStart=/usr/bin/rpm-ostree rebase --bypass-driver ostree-image-signed:docker://ghcr.io/cernicc/ucore-server:latest\nExecStart=/usr/bin/touch /etc/ucore-autorebase/signed\nExecStart=/usr/bin/systemctl disable ucore-signed-autorebase.service\nExecStart=/usr/bin/systemctl reboot\n[Install]\nWantedBy=multi-user.target\n",
         "enabled": true,
         "name": "ucore-signed-autorebase.service"
+      },
+      {
+        "contents": "[Unit]\nDescription=Bootstrap homelab dotfiles via chezmoi\nConditionPathExists=/etc/ucore-autorebase/signed\nConditionPathExists=!/etc/ucore-autorebase/bootstrapped\nAfter=network-online.target\nWants=network-online.target\n[Service]\nType=oneshot\nStandardOutput=journal+console\nExecStart=/usr/sbin/loginctl enable-linger cernic\nExecStart=/usr/bin/runuser -l cernic -c '/usr/bin/chezmoi init --apply https://github.com/cernicc/homelab'\nExecStart=/usr/bin/touch /etc/ucore-autorebase/bootstrapped\nExecStart=/usr/bin/systemctl disable homelab-bootstrap.service\n[Install]\nWantedBy=multi-user.target\n",
+        "enabled": true,
+        "name": "homelab-bootstrap.service"
       }
     ]
   }

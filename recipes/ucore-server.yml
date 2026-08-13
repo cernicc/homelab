@@ -13,8 +13,10 @@ modules:
   - type: rpm-ostree
     repos:
       - ganto-lxc4-incus.repo
+      - tailscale.repo
     install:
       - incus
+      - tailscale
 
   - type: files
     files:
