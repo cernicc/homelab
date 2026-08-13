@@ -1,0 +1,24 @@
+[Unit]
+Description=%i stack with podman compose
+Requires=podman.socket
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/podman compose --env-file %h/homelab/.env up -d --remove-orphans --build
+ExecReload=/usr/bin/podman compose --env-file %h/homelab/.env up -d --remove-orphans --build
+ExecStop=/usr/bin/podman compose stop
+Environment=PODMAN_SYSTEMD_UNIT=%n
+Environment=PODMAN_USERNS=keep-id
+Environment=DOCKER_HOST=unix://%t/podman/podman.sock
+Environment=PODMAN_COMPOSE_WARNING_LOGS=false
+TimeoutStartSec=300
+TimeoutStopSec=300
+Restart=on-failure
+RestartSec=30
+StartLimitBurst=10
+StartLimitIntervalSec=600
+WorkingDirectory=%h/homelab/stacks/%i
+
+[Install]
+WantedBy=default.target

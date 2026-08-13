@@ -1,0 +1,19 @@
+#!/bin/bash
+set -euo pipefail
+
+# Apply dotfile changes (handles symlink additions/removals)
+chezmoi apply
+
+# Pick up symlink changes in systemd
+systemctl --user daemon-reload
+
+# Stop stacks that are running but no longer enabled
+while IFS= read -r svc; do
+    if ! systemctl --user is-enabled --quiet "$svc" 2>/dev/null; then
+        systemctl --user stop "$svc"
+    fi
+done < <(systemctl --user list-units --state=active --no-legend 'docker-compose@*.service' | awk '{print $1}')
+
+# Reload running stacks and start newly enabled ones
+systemctl --user reload docker-compose@*.service || true
+systemctl --user start docker-compose@*.service || true

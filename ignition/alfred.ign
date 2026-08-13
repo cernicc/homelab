@@ -1,0 +1,92 @@
+{
+  "ignition": {
+    "version": "3.4.0"
+  },
+  "passwd": {
+    "users": [
+      {
+        "groups": [
+          "wheel",
+          "sudo"
+        ],
+        "name": "cernic",
+        "sshAuthorizedKeys": [
+          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIObOsA5oUCSLkwXE15Fdxf0BD2hQMGMCbdnDW1oZHshV lightweight-machine"
+        ]
+      }
+    ]
+  },
+  "storage": {
+    "directories": [
+      {
+        "path": "/etc/ucore-autorebase",
+        "mode": 492
+      }
+    ],
+    "files": [
+      {
+        "path": "/etc/hostname",
+        "contents": {
+          "compression": "",
+          "source": "data:,alfred"
+        },
+        "mode": 420
+      },
+      {
+        "path": "/etc/pki/containers/cernicc-homelab.pub",
+        "contents": {
+          "compression": "",
+          "source": "data:,-----BEGIN%20PUBLIC%20KEY-----%0AMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEjk7pDi62rWPH30Gq18vuu1mqqU6z%0AHZ98WNJTTiBnmR7pqGRvddWH3xL5Dzi7uYFiwiMn8KzxolrvPHj3aWsx%2Bw%3D%3D%0A-----END%20PUBLIC%20KEY-----%0A"
+        },
+        "mode": 420
+      },
+      {
+        "path": "/etc/containers/policy.json",
+        "contents": {
+          "compression": "gzip",
+          "source": "data:;base64,H4sIAAAAAAAC/1SOsW7DMAxEd3+FwDmJdm8ZuxXtGGRQaNYinEgCSRcQDP97IaM22o0E3ru7pXMOBvoK89Ogd7cFrBaC3gEnJZyFrohU7JqqRU4jrPdTU0xC0pLFFHrXQlpMxonk+J2DMaJcOHskSYzoZ8xCZyX53rjbL+cOY7P2BcqjWhb65DHRAKe/zET1PVhsmCdDXyb2mJMFTiS6F55jftEzPC5lfvz3dct8GygZW22bj9pXMIwfVLKyZamwHt5+3bv9W7u1+wkAAP//BymJGkMBAAA="
+        },
+        "mode": 420
+      }
+    ],
+    "filesystems": [
+      {
+        "device": "/dev/mapper/root",
+        "format": "xfs",
+        "label": "root",
+        "wipeFilesystem": true
+      }
+    ],
+    "links": [
+      {
+        "path": "/etc/localtime",
+        "target": "../usr/share/zoneinfo/Europe/Ljubljana"
+      }
+    ],
+    "luks": [
+      {
+        "clevis": {
+          "tpm2": true
+        },
+        "device": "/dev/disk/by-partlabel/root",
+        "label": "luks-root",
+        "name": "root",
+        "wipeVolume": true
+      }
+    ]
+  },
+  "systemd": {
+    "units": [
+      {
+        "contents": "[Unit]\nDescription=uCore autorebase to unsigned OCI and reboot\nConditionPathExists=!/etc/ucore-autorebase/unverified\nConditionPathExists=!/etc/ucore-autorebase/signed\nAfter=network-online.target\nWants=network-online.target\n[Service]\nType=oneshot\nStandardOutput=journal+console\nExecStart=/usr/bin/rpm-ostree rebase --bypass-driver ostree-unverified-registry:ghcr.io/cernicc/ucore-server:latest\nExecStart=/usr/bin/touch /etc/ucore-autorebase/unverified\nExecStart=/usr/bin/systemctl disable ucore-unsigned-autorebase.service\nExecStart=/usr/bin/systemctl reboot\n[Install]\nWantedBy=multi-user.target\n",
+        "enabled": true,
+        "name": "ucore-unsigned-autorebase.service"
+      },
+      {
+        "contents": "[Unit]\nDescription=uCore autorebase to signed OCI and reboot\nConditionPathExists=/etc/ucore-autorebase/unverified\nConditionPathExists=!/etc/ucore-autorebase/signed\nAfter=network-online.target\nWants=network-online.target\n[Service]\nType=oneshot\nStandardOutput=journal+console\nExecStart=/usr/bin/rpm-ostree rebase --bypass-driver ostree-image-signed:docker://ghcr.io/cernicc/ucore-server:latest\nExecStart=/usr/bin/touch /etc/ucore-autorebase/signed\nExecStart=/usr/bin/systemctl disable ucore-signed-autorebase.service\nExecStart=/usr/bin/systemctl reboot\n[Install]\nWantedBy=multi-user.target\n",
+        "enabled": true,
+        "name": "ucore-signed-autorebase.service"
+      }
+    ]
+  }
+}

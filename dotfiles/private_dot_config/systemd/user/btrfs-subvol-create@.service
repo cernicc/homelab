@@ -1,0 +1,12 @@
+[Unit]
+Description=Create btrfs subvolume %I
+After=local-fs.target
+ConditionPathExists=!%h/%I
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/btrfs subvolume create %h/%I
+RemainAfterExit=yes
+
+[Install]
+WantedBy=default.target
