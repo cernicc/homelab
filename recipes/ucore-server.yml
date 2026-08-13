@@ -10,10 +10,14 @@ base-image: ghcr.io/ublue-os/ucore-minimal
 image-version: stable-nvidia # latest is also supported if you want new updates ASAP
 
 modules:
+  - type: script
+    scripts:
+      - import-keys.sh
+
   - type: rpm-ostree
     repos:
       - ganto-lxc4-incus.repo
-      - tailscale.repo
+      - https://pkgs.tailscale.com/stable/fedora/tailscale.repo
     install:
       - incus
       - tailscale
