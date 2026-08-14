@@ -1,4 +1,8 @@
-version: "3.5"
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
 
 services:
   traefik:
@@ -60,6 +64,7 @@ services:
       - traefik.http.routers.dashboard.tls.certresolver=letsencrypt
     extra_hosts:
       - "host.docker.internal:172.17.0.1"
+    logging: *logging
 
 volumes:
   ssl-certs:

@@ -1,4 +1,8 @@
-version: "3.5"
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
 
 services:
   whoami:
@@ -13,6 +17,7 @@ services:
       - traefik.http.routers.whoami.entrypoints=websecure
       - traefik.http.routers.whoami.tls=true
       - traefik.http.routers.whoami.tls.certresolver=letsencrypt
+    logging: *logging
 
 networks:
   proxy:
