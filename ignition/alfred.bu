@@ -81,7 +81,7 @@ systemd:
       enabled: true
       contents: |
         [Unit]
-        Description=uCore autorebase to signed OCI and reboot
+        Description=uCore autorebase to signed OCI via bootc and reboot
         ConditionPathExists=/etc/ucore-autorebase/unverified
         ConditionPathExists=!/etc/ucore-autorebase/signed
         After=network-online.target
@@ -89,7 +89,7 @@ systemd:
         [Service]
         Type=oneshot
         StandardOutput=journal+console
-        ExecStart=/usr/bin/rpm-ostree rebase --bypass-driver ostree-image-signed:docker://ghcr.io/cernicc/ucore-server:latest
+        ExecStart=/usr/bin/bootc switch --enforce-container-sigpolicy ghcr.io/cernicc/ucore-server:latest
         ExecStart=/usr/bin/touch /etc/ucore-autorebase/signed
         ExecStart=/usr/bin/systemctl disable ucore-signed-autorebase.service
         ExecStart=/usr/bin/systemctl reboot
