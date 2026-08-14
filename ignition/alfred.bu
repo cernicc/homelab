@@ -51,6 +51,7 @@ storage:
 
     - path: /etc/containers/policy.json
       mode: 0644
+      overwrite: true
       contents:
         inline: |
           {

@@ -62,6 +62,7 @@
         "mode": 420
       },
       {
+        "overwrite": true,
         "path": "/etc/containers/policy.json",
         "contents": {
           "compression": "gzip",
