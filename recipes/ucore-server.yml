@@ -15,12 +15,10 @@ modules:
       cleanup: true
       copr:
         - ganto/lxc4
-      files:
-        - https://pkgs.tailscale.com/stable/fedora/tailscale.repo
     install:
       packages:
         - incus
-        - tailscale
+        - chezmoi
 
   - type: files
     files:
