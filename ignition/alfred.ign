@@ -8,10 +8,12 @@
         "groups": [
           "wheel"
         ],
+        "homeDir": "/home/cernic",
         "name": "cernic",
         "sshAuthorizedKeys": [
           "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIObOsA5oUCSLkwXE15Fdxf0BD2hQMGMCbdnDW1oZHshV lightweight-machine"
-        ]
+        ],
+        "shell": "/bin/bash"
       }
     ]
   },
@@ -19,6 +21,14 @@
     "directories": [
       {
         "path": "/etc/ucore-autorebase",
+        "mode": 493
+      },
+      {
+        "path": "/etc/ssh/sshd_config.d",
+        "mode": 493
+      },
+      {
+        "path": "/etc/containers",
         "mode": 493
       },
       {
@@ -39,7 +49,7 @@
         "path": "/etc/ssh/sshd_config.d/99-hardening.conf",
         "contents": {
           "compression": "",
-          "source": "data:,PasswordAuthentication%20no%0APermitRootLogin%20no%0A"
+          "source": "data:,PasswordAuthentication%20no%0APermitRootLogin%20no%0AAllowUsers%20cernic%0AX11Forwarding%20no%0AMaxAuthTries%203%0A"
         },
         "mode": 384
       },

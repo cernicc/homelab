@@ -3,6 +3,8 @@ version: 1.5.0
 passwd:
   users:
     - name: cernic
+      home_dir: /home/cernic
+      shell: /bin/bash
       groups:
         - wheel
       ssh_authorized_keys:
@@ -14,6 +16,10 @@ boot_device:
 storage:
   directories:
     - path: /etc/ucore-autorebase
+      mode: 0755
+    - path: /etc/ssh/sshd_config.d
+      mode: 0755
+    - path: /etc/containers
       mode: 0755
     - path: /etc/pki/containers
       mode: 0755
@@ -30,6 +36,9 @@ storage:
         inline: |
           PasswordAuthentication no
           PermitRootLogin no
+          AllowUsers cernic
+          X11Forwarding no
+          MaxAuthTries 3
 
     - path: /etc/pki/containers/cernicc-homelab.pub
       mode: 0644
