@@ -55,9 +55,10 @@ storage:
       contents:
         inline: |
           {
-            "default": [{"type": "insecureAcceptAnything"}],
+            "default": [{"type": "reject"}],
             "transports": {
               "docker": {
+                "": [{"type": "insecureAcceptAnything"}],
                 "ghcr.io/cernicc/ucore-server": [
                   {
                     "type": "sigstoreSigned",
@@ -65,6 +66,9 @@ storage:
                     "signedIdentity": {"type": "matchRepository"}
                   }
                 ]
+              },
+              "docker-daemon": {
+                "": [{"type": "insecureAcceptAnything"}]
               }
             }
           }
