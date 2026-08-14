@@ -86,7 +86,8 @@ systemd:
       contents: |
         [Unit]
         Description=Configure firewall rules for homelab
-        After=network-online.target tailscaled.service incus.service
+        ConditionPathExists=/etc/ucore-autorebase/signed
+        After=network-online.target tailscaled.service incus.service ucore-signed-autorebase.service
         Wants=network-online.target tailscaled.service incus.service
         [Service]
         Type=oneshot
