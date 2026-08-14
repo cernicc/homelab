@@ -70,7 +70,7 @@
         "path": "/etc/containers/policy.json",
         "contents": {
           "compression": "gzip",
-          "source": "data:;base64,H4sIAAAAAAAC/5yQsY6zMBAGe57Ccg2hp0v5d7/uyiiFs3wHPsKutV5OQhHvfgIFlLRX2ZZmZuV9FM75Fl9huptv3OXhbU7wjfOKb5D55VquiGngnEQt+8at0qoJDdDj7Zx/L0TOoElxJkKyM8/WR+6exY3vetJTlJqgHInqiURRZejP1r08OXdM2Ky9n2OXTRSfsWO0vnxlBsz/g/UrVsOoTkOsSdhCZGjeB1a9jLiH2ylNt3c/b81/Ldiizesfj7FjMOo/kCRHE539cnj77bqdS/m6pqoNGIX/sK1iTy/FUvwGAAD//ykfh9iwAQAA"
+          "source": "data:;base64,H4sIAAAAAAAC/1SPsYrrMBBFe3+FmDqJe3cpX/fYLUMKZXzXnnUiidF4QQT/+yITm02ngXPORc/GOerx5ee7UecuT7KSQJ0jxTfYaLkeKmLqQ05RLVPnqlS1yBN0v52j94KEDJ4VZ2YkO4dio4ThVVz5YWQ9SWwZGoS5nTkqjhn6s3YvL87tC6u19bMM2aLiU4aAng5/mQnlv7exYi2M2zRJyzGYlwDN2+BxjA/c/e2U5tu7n9fmvx7BxEr94z778MbjB1LMYlELLbu3va7Ndi3N0vwGAAD//yvu6jZjAQAA"
         },
         "mode": 420
       },

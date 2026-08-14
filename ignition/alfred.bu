@@ -64,9 +64,6 @@ storage:
                     "signedIdentity": {"type": "matchRepository"}
                   }
                 ]
-              },
-              "docker-daemon": {
-                "": [{"type": "insecureAcceptAnything"}]
               }
             }
           }
