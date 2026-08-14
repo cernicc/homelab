@@ -15,6 +15,8 @@ storage:
   directories:
     - path: /etc/ucore-autorebase
       mode: 0755
+    - path: /etc/pki/containers
+      mode: 0755
 
   files:
     - path: /etc/hostname
@@ -80,6 +82,7 @@ systemd:
         Type=oneshot
         Restart=on-failure
         RestartSec=30
+        TimeoutStartSec=infinity
         StandardOutput=journal+console
         StandardError=journal+console
         ExecStart=/usr/bin/rpm-ostree rebase --bypass-driver ostree-unverified-registry:ghcr.io/cernicc/ucore-server:latest
@@ -95,12 +98,13 @@ systemd:
         Description=uCore autorebase to signed OCI via bootc and reboot
         ConditionPathExists=/etc/ucore-autorebase/unverified
         ConditionPathExists=!/etc/ucore-autorebase/signed
-        After=network-online.target
+        After=network-online.target ucore-unsigned-autorebase.service
         Wants=network-online.target
         [Service]
         Type=oneshot
         Restart=on-failure
         RestartSec=30
+        TimeoutStartSec=infinity
         StandardOutput=journal+console
         StandardError=journal+console
         ExecStart=/usr/bin/bootc switch --enforce-container-sigpolicy ghcr.io/cernicc/ucore-server:latest
@@ -122,6 +126,7 @@ systemd:
         Type=oneshot
         Restart=on-failure
         RestartSec=30
+        TimeoutStartSec=infinity
         StandardOutput=journal+console
         StandardError=journal+console
         ExecStart=/usr/sbin/loginctl enable-linger cernic
