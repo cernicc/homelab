@@ -18,8 +18,9 @@ modules:
       files:
         - https://pkgs.tailscale.com/stable/fedora/tailscale.repo
     install:
-      - incus
-      - tailscale
+      packages:
+        - incus
+        - tailscale
 
   - type: files
     files:
