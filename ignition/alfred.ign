@@ -6,8 +6,7 @@
     "users": [
       {
         "groups": [
-          "wheel",
-          "sudo"
+          "wheel"
         ],
         "name": "cernic",
         "sshAuthorizedKeys": [
