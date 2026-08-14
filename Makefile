@@ -1,3 +1,3 @@
 .PHONY: ignition
 ignition:
-	butane --pretty --strict ignition/alfred.bu > ignition/alfred.ign
+	butane --pretty --strict --files-dir . ignition/alfred.bu > ignition/alfred.ign

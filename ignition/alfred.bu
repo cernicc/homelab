@@ -43,11 +43,7 @@ storage:
     - path: /etc/pki/containers/cernicc-homelab.pub
       mode: 0644
       contents:
-        inline: |
-          -----BEGIN PUBLIC KEY-----
-          MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEjk7pDi62rWPH30Gq18vuu1mqqU6z
-          HZ98WNJTTiBnmR7pqGRvddWH3xL5Dzi7uYFiwiMn8KzxolrvPHj3aWsx+w==
-          -----END PUBLIC KEY-----
+        local: cosign.pub
 
     - path: /etc/containers/policy.json
       mode: 0644
