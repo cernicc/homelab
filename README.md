@@ -35,7 +35,7 @@ Boot from the ISO and run:
 sudo coreos-installer install --ignition-url https://github.com/cernicc/homelab/raw/main/ignition/alfred.ign /dev/sdX
 ```
 
-Then reboot. The machine will automatically rebase to the custom image and reboot twice, then apply dotfiles and start all stacks. No further SSH needed.
+Then reboot. The machine will automatically rebase to the custom image and reboot twice, then apply dotfiles, configure firewall rules, and start all stacks. No further SSH needed.
 
 ### 3. Enroll secure boot keys
 
@@ -56,15 +56,7 @@ sudo tailscale up
 
 Follow the URL printed to authenticate the machine to your tailnet.
 
-### 5. Open firewall ports
-
-```bash
-sudo firewall-cmd --add-port=80/tcp --add-port=443/tcp
-sudo firewall-cmd --zone=FedoraServer --add-interface=tailscale0
-sudo firewall-cmd --runtime-to-permanent
-```
-
-### 6. Configure DNS
+### 5. Configure DNS
 
 Point your domain's DNS records to the machine's IP. Services will be available at `<service>.yourdomain.com` as configured in Traefik.
 

@@ -78,6 +78,28 @@ systemd:
       enabled: true
     - name: tailscaled.service
       enabled: true
+    - name: incus.service
+      enabled: true
+    - name: homelab-firewall.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Configure firewall rules for homelab
+        After=network-online.target tailscaled.service incus.service
+        Wants=network-online.target tailscaled.service incus.service
+        [Service]
+        Type=oneshot
+        RemainAfterExit=yes
+        StandardOutput=journal+console
+        StandardError=journal+console
+        ExecStart=/usr/bin/firewall-cmd --new-zone=tailscale --permanent
+        ExecStart=/usr/bin/firewall-cmd --zone=tailscale --add-interface=tailscale0 --permanent
+        ExecStart=/usr/bin/firewall-cmd --zone=tailscale --add-port=80/tcp --permanent
+        ExecStart=/usr/bin/firewall-cmd --zone=tailscale --add-port=443/tcp --permanent
+        ExecStart=/usr/bin/firewall-cmd --zone=trusted --change-interface=incusbr --permanent
+        ExecStart=/usr/bin/firewall-cmd --reload
+        [Install]
+        WantedBy=multi-user.target
     - name: ucore-unsigned-autorebase.service
       enabled: true
       contents: |

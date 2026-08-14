@@ -107,6 +107,15 @@
         "name": "tailscaled.service"
       },
       {
+        "enabled": true,
+        "name": "incus.service"
+      },
+      {
+        "contents": "[Unit]\nDescription=Configure firewall rules for homelab\nAfter=network-online.target tailscaled.service incus.service\nWants=network-online.target tailscaled.service incus.service\n[Service]\nType=oneshot\nRemainAfterExit=yes\nStandardOutput=journal+console\nStandardError=journal+console\nExecStart=/usr/bin/firewall-cmd --new-zone=tailscale --permanent\nExecStart=/usr/bin/firewall-cmd --zone=tailscale --add-interface=tailscale0 --permanent\nExecStart=/usr/bin/firewall-cmd --zone=tailscale --add-port=80/tcp --permanent\nExecStart=/usr/bin/firewall-cmd --zone=tailscale --add-port=443/tcp --permanent\nExecStart=/usr/bin/firewall-cmd --zone=trusted --change-interface=incusbr --permanent\nExecStart=/usr/bin/firewall-cmd --reload\n[Install]\nWantedBy=multi-user.target\n",
+        "enabled": true,
+        "name": "homelab-firewall.service"
+      },
+      {
         "contents": "[Unit]\nDescription=uCore autorebase to unsigned OCI and reboot\nConditionPathExists=!/etc/ucore-autorebase/unverified\nConditionPathExists=!/etc/ucore-autorebase/signed\nAfter=network-online.target\nWants=network-online.target\n[Service]\nType=oneshot\nRestart=on-failure\nRestartSec=30\nTimeoutStartSec=infinity\nStandardOutput=journal+console\nStandardError=journal+console\nExecStart=/usr/bin/rpm-ostree rebase --bypass-driver ostree-unverified-registry:ghcr.io/cernicc/ucore-server:latest\nExecStart=/usr/bin/touch /etc/ucore-autorebase/unverified\nExecStart=/usr/bin/systemctl disable ucore-unsigned-autorebase.service\nExecStart=/usr/bin/systemctl reboot\n[Install]\nWantedBy=multi-user.target\n",
         "enabled": true,
         "name": "ucore-unsigned-autorebase.service"
