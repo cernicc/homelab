@@ -9,6 +9,9 @@ on:
       - "**.md" # don't rebuild if only documentation has changed
       - stacks/** # don't rebuild if only dotfiles have changed
       - ucore-setup.bu # don't rebuild if only ucore-setup.bu has changed
+      - ignition/** # host provisioning config, not part of the image
+      - cosign.pub # not baked into the image, only used to verify it
+      - Makefile # only drives local ignition builds
 
   pull_request:
   workflow_dispatch: # allow manually triggering builds

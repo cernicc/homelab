@@ -34,6 +34,10 @@
       {
         "path": "/etc/pki/containers",
         "mode": 493
+      },
+      {
+        "path": "/etc/containers/registries.d",
+        "mode": 493
       }
     ],
     "files": [
@@ -67,6 +71,14 @@
         "contents": {
           "compression": "gzip",
           "source": "data:;base64,H4sIAAAAAAAC/5yQsY6zMBAGe57Ccg2hp0v5d7/uyiiFs3wHPsKutV5OQhHvfgIFlLRX2ZZmZuV9FM75Fl9huptv3OXhbU7wjfOKb5D55VquiGngnEQt+8at0qoJDdDj7Zx/L0TOoElxJkKyM8/WR+6exY3vetJTlJqgHInqiURRZejP1r08OXdM2Ky9n2OXTRSfsWO0vnxlBsz/g/UrVsOoTkOsSdhCZGjeB1a9jLiH2ylNt3c/b81/Ldiizesfj7FjMOo/kCRHE539cnj77bqdS/m6pqoNGIX/sK1iTy/FUvwGAAD//ykfh9iwAQAA"
+        },
+        "mode": 420
+      },
+      {
+        "path": "/etc/containers/registries.d/default.yaml",
+        "contents": {
+          "compression": "",
+          "source": "data:,docker%3A%0A%20%20ghcr.io%2Fcernicc%2Fucore-server%3A%0A%20%20%20%20use-sigstore-attachments%3A%20true%0A"
         },
         "mode": 420
       }

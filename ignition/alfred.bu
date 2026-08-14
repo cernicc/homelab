@@ -23,6 +23,8 @@ storage:
       mode: 0755
     - path: /etc/pki/containers
       mode: 0755
+    - path: /etc/containers/registries.d
+      mode: 0755
 
   files:
     - path: /etc/hostname
@@ -68,6 +70,14 @@ storage:
               }
             }
           }
+
+    - path: /etc/containers/registries.d/default.yaml
+      mode: 0644
+      contents:
+        inline: |
+          docker:
+            ghcr.io/cernicc/ucore-server:
+              use-sigstore-attachments: true
 
   links:
     - path: /etc/localtime
