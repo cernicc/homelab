@@ -78,6 +78,10 @@
     "units": [
       {
         "enabled": true,
+        "name": "sshd.service"
+      },
+      {
+        "enabled": true,
         "name": "tailscaled.service"
       },
       {
