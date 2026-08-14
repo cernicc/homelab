@@ -35,7 +35,7 @@ Boot from the ISO and run:
 sudo coreos-installer install --ignition-url https://github.com/cernicc/homelab/raw/main/ignition/alfred.ign /dev/sdX
 ```
 
-Then reboot. The machine will automatically rebase to the custom image and reboot twice, then apply dotfiles, configure firewall rules, and start all stacks. No further SSH needed.
+Then reboot. The machine will automatically rebase to the custom image and reboot twice, then apply dotfiles and configure firewall rules. Stacks will not start until `.env` is configured (see step 5).
 
 ### 3. Enroll secure boot keys
 
@@ -56,7 +56,17 @@ sudo tailscale up
 
 Follow the URL printed to authenticate the machine to your tailnet.
 
-### 5. Configure DNS
+### 5. Create `.env` file
+
+SSH into the machine and create the environment file from the example:
+
+```bash
+cp ~/homelab/.env.example ~/homelab/.env
+```
+
+Then edit `~/homelab/.env` with your actual credentials. Stacks will start automatically within 5 minutes once the file exists.
+
+### 6. Configure DNS
 
 Point your domain's DNS records to the machine's IP. Services will be available at `<service>.yourdomain.com` as configured in Traefik.
 

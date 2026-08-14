@@ -1,17 +1,48 @@
-version: "3.5"
 name: media
 
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+x-media-env: &media-env
+  PUID: 1000
+  PGID: 1000
+  TZ: Europe/Ljubljana
+
 services:
+  jellyfin:
+    image: lscr.io/linuxserver/jellyfin:10.11.11
+    container_name: jellyfin
+    restart: unless-stopped
+    environment:
+      <<: *media-env
+    volumes:
+      - jellyfin-config:/config
+      - downloads:/data/downloads:ro
+    networks:
+      - media
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.jellyfin.rule=Host(`jellyfin.${DOMAIN_NAME}`)
+      - traefik.http.routers.jellyfin.entrypoints=websecure
+      - traefik.http.routers.jellyfin.service=jellyfin
+      - traefik.http.routers.jellyfin.tls=true
+      - traefik.http.routers.jellyfin.tls.certresolver=letsencrypt
+      - traefik.http.services.jellyfin.loadbalancer.server.port=8096
+    logging: *logging
+
   transmission:
     image: linuxserver/transmission:4.0.6
     container_name: transmission
     restart: unless-stopped
     environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Europe/Ljubljana
-      - USER=${TRANSMISSION_USER}
-      - PASS=${TRANSMISSION_PASS}
+      <<: *media-env
+      USER: ${TRANSMISSION_USER}
+      PASS: ${TRANSMISSION_PASS}
     volumes:
       - tx-config:/config
       - tx-watch:/watch
@@ -30,15 +61,14 @@ services:
       - traefik.http.routers.transmission.tls=true
       - traefik.http.routers.transmission.tls.certresolver=letsencrypt
       - traefik.http.services.transmission.loadbalancer.server.port=9091
+    logging: *logging
 
   prowlarr:
     image: linuxserver/prowlarr:2.3.0
     container_name: prowlarr
     restart: unless-stopped
     environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Europe/Ljubljana
+      <<: *media-env
     volumes:
       - prowlarr-config:/config
     networks:
@@ -53,15 +83,14 @@ services:
       - traefik.http.routers.prowlarr.tls=true
       - traefik.http.routers.prowlarr.tls.certresolver=letsencrypt
       - traefik.http.services.prowlarr.loadbalancer.server.port=9696
+    logging: *logging
 
   sonarr:
-    image: linuxserver/sonarr:4.0.16-develop
+    image: linuxserver/sonarr:4.0.19
     container_name: sonarr
     restart: unless-stopped
     environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Europe/Ljubljana
+      <<: *media-env
     volumes:
       - sonarr-config:/config
       - downloads:/downloads
@@ -77,15 +106,14 @@ services:
       - traefik.http.routers.sonarr.tls=true
       - traefik.http.routers.sonarr.tls.certresolver=letsencrypt
       - traefik.http.services.sonarr.loadbalancer.server.port=8989
+    logging: *logging
 
   radarr:
     image: lscr.io/linuxserver/radarr:6.0.4
     container_name: radarr
     restart: unless-stopped
     environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Europe/Ljubljana
+      <<: *media-env
     volumes:
       - radarr-config:/config
       - downloads:/downloads
@@ -101,6 +129,52 @@ services:
       - traefik.http.routers.radarr.tls=true
       - traefik.http.routers.radarr.tls.certresolver=letsencrypt
       - traefik.http.services.radarr.loadbalancer.server.port=7878
+    logging: *logging
+
+  jellyseerr:
+    image: fallenbagel/jellyseerr:1.6.0
+    container_name: jellyseerr
+    restart: unless-stopped
+    environment:
+      TZ: Europe/Ljubljana
+    volumes:
+      - jellyseerr-config:/app/config
+    networks:
+      - media
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.jellyseerr.rule=Host(`jellyseerr.${DOMAIN_NAME}`)
+      - traefik.http.routers.jellyseerr.entrypoints=websecure
+      - traefik.http.routers.jellyseerr.service=jellyseerr
+      - traefik.http.routers.jellyseerr.tls=true
+      - traefik.http.routers.jellyseerr.tls.certresolver=letsencrypt
+      - traefik.http.services.jellyseerr.loadbalancer.server.port=5055
+    logging: *logging
+
+  bazarr:
+    image: lscr.io/linuxserver/bazarr:1.6.0
+    container_name: bazarr
+    restart: unless-stopped
+    environment:
+      <<: *media-env
+    volumes:
+      - bazarr-config:/config
+      - downloads:/data/downloads
+    networks:
+      - media
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.bazarr.rule=Host(`bazarr.${DOMAIN_NAME}`)
+      - traefik.http.routers.bazarr.entrypoints=websecure
+      - traefik.http.routers.bazarr.service=bazarr
+      - traefik.http.routers.bazarr.tls=true
+      - traefik.http.routers.bazarr.tls.certresolver=letsencrypt
+      - traefik.http.services.bazarr.loadbalancer.server.port=6767
+    logging: *logging
 
 volumes:
   downloads:
@@ -109,6 +183,9 @@ volumes:
   sonarr-config:
   radarr-config:
   prowlarr-config:
+  jellyfin-config:
+  jellyseerr-config:
+  bazarr-config:
 
 networks:
   media:

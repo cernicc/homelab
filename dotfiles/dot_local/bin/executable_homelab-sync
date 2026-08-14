@@ -4,6 +4,12 @@ set -euo pipefail
 # Apply dotfile changes (handles symlink additions/removals)
 chezmoi apply
 
+# Skip stack management if .env is not yet configured
+if [ ! -f "$HOME/homelab/.env" ]; then
+    echo "No .env file found at ~/homelab/.env — skipping stack management"
+    exit 0
+fi
+
 # Pick up symlink changes in systemd
 systemctl --user daemon-reload
 
