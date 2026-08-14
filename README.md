@@ -105,3 +105,10 @@ The machine runs `homelab-sync` every 5 minutes via a systemd timer. Each run:
 4. Reloads running stacks and starts newly enabled ones
 
 This means most changes (enabling/disabling stacks, updating compose files) only require a `git push` — no manual SSH needed.
+
+### Control files
+
+Two files on the machine control sync behaviour:
+
+- `~/homelab/.env` — must exist for stacks to start. Until created, `homelab-sync` applies dotfiles but skips all stack management.
+- `~/homelab/.working` — create this file to pause the sync cron entirely (useful when making manual changes on the server). Delete it to resume auto-sync.
