@@ -88,6 +88,18 @@ systemd:
       enabled: true
     - name: incus.service
       enabled: true
+    - name: bootc-fetch-apply-updates.timer
+      enabled: true
+      dropins:
+        - name: schedule.conf
+          contents: |
+            [Timer]
+            OnBootSec=
+            OnUnitInactiveSec=
+            RandomizedDelaySec=
+            OnCalendar=*-*-* 01:00:00 UTC
+            RandomizedDelaySec=30m
+            Persistent=true
     - name: homelab-firewall.service
       enabled: true
       contents: |
