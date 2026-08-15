@@ -88,6 +88,12 @@ Point your domain's DNS records to the machine's IP. Services will be available 
 
 Stacks are managed as systemd user services via the `docker-compose@.service` template. Each stack maps to a directory under `stacks/` containing a `docker-compose.yml`.
 
+- `invoice-ninja` — see [stack README](stacks/invoice-ninja/README.md)
+- `media`
+- `observability`
+- `traefik`
+- `whoami`
+
 ### Enable a stack on boot
 
 Add a symlink file to `dotfiles/private_dot_config/systemd/user/default.target.wants/`:

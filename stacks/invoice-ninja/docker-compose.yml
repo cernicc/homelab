@@ -8,7 +8,14 @@ services:
   app:
     image: invoiceninja/invoiceninja-debian:5.13.31
     restart: unless-stopped
-    env_file: .env
+    environment:
+      APP_KEY: ${APP_KEY}
+      APP_URL: ${APP_URL}
+      DB_DATABASE: ${DB_DATABASE}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      IN_USER_EMAIL: ${IN_USER_EMAIL}
+      IN_PASSWORD: ${IN_PASSWORD}
     volumes:
       - app_public:/var/www/html/public:rw
       - app_storage:/var/www/html/storage:rw
@@ -46,7 +53,6 @@ services:
   mysql:
     image: mysql:8.4.11
     restart: unless-stopped
-    env_file: .env
     environment:
       MYSQL_DATABASE: ${DB_DATABASE}
       MYSQL_USER: ${DB_USERNAME}
