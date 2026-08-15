@@ -14,7 +14,6 @@ x-media-env: &media-env
 services:
   jellyfin:
     image: lscr.io/linuxserver/jellyfin:10.11.11
-    container_name: jellyfin
     restart: unless-stopped
     environment:
       <<: *media-env
@@ -37,7 +36,6 @@ services:
 
   transmission:
     image: linuxserver/transmission:4.0.6
-    container_name: transmission
     restart: unless-stopped
     environment:
       <<: *media-env
@@ -65,7 +63,6 @@ services:
 
   prowlarr:
     image: linuxserver/prowlarr:2.3.0
-    container_name: prowlarr
     restart: unless-stopped
     environment:
       <<: *media-env
@@ -87,7 +84,6 @@ services:
 
   sonarr:
     image: linuxserver/sonarr:4.0.19
-    container_name: sonarr
     restart: unless-stopped
     environment:
       <<: *media-env
@@ -110,7 +106,6 @@ services:
 
   radarr:
     image: lscr.io/linuxserver/radarr:6.0.4
-    container_name: radarr
     restart: unless-stopped
     environment:
       <<: *media-env
@@ -133,7 +128,6 @@ services:
 
   jellyseerr:
     image: fallenbagel/jellyseerr:1.6.0
-    container_name: jellyseerr
     restart: unless-stopped
     environment:
       TZ: Europe/Ljubljana
@@ -155,7 +149,6 @@ services:
 
   bazarr:
     image: lscr.io/linuxserver/bazarr:1.6.0
-    container_name: bazarr
     restart: unless-stopped
     environment:
       <<: *media-env
