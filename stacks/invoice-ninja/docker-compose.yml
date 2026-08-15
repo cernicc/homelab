@@ -9,6 +9,7 @@ services:
     image: invoiceninja/invoiceninja-debian:5.13.31
     restart: unless-stopped
     environment:
+      APP_ENV: ${APP_ENV}
       APP_KEY: ${APP_KEY}
       APP_URL: ${APP_URL}
       DB_DATABASE: ${DB_DATABASE}
@@ -32,7 +33,7 @@ services:
     image: nginx:1.31.3-alpine
     restart: unless-stopped
     volumes:
-      - ./nginx/in-vhost.conf:/etc/nginx/conf.d/in-vhost.conf:ro
+      - ./nginx/in-vhost.conf:/etc/nginx/conf.d/in-vhost.conf:ro,Z
       - app_public:/var/www/html/public:ro
       - app_storage:/var/www/html/storage:ro
     networks:

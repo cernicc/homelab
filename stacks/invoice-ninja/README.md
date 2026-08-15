@@ -2,6 +2,10 @@
 
 `app` (invoiceninja-debian) + `nginx` + `mysql` + `redis`, fronted by Traefik at `invoices.${DOMAIN_NAME}`.
 
+## APP_ENV
+
+The image's entrypoint (`/usr/local/bin/init.sh`) runs under `sh -eu` and does `if [ "$APP_ENV" = "production" ]` — with `APP_ENV` unset that's an unbound-variable error, and the container exits before ever starting supervisord. `APP_ENV=production` must be set in `~/homelab/.env`; it's also what gates running migrations and the first-admin bootstrap below.
+
 ## APP_KEY
 
 Generate one with the same image pinned in `docker-compose.yml`:

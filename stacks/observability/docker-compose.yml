@@ -15,7 +15,7 @@ services:
       - GF_AUTH_DISABLE_LOGIN_FORM=true
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro,Z
     networks:
       - observability
       - proxy
@@ -34,7 +34,7 @@ services:
     restart: unless-stopped
     command: -config.file=/etc/loki/config.yaml
     volumes:
-      - ./loki/config.yaml:/etc/loki/config.yaml:ro
+      - ./loki/config.yaml:/etc/loki/config.yaml:ro,Z
       - loki_data:/loki
     networks:
       - observability
@@ -45,7 +45,7 @@ services:
     restart: unless-stopped
     command: run --server.http.listen-addr=0.0.0.0:12345 /etc/alloy/config.alloy
     volumes:
-      - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - ./alloy/config.alloy:/etc/alloy/config.alloy:ro,Z
       - ${XDG_RUNTIME_DIR}/podman/podman.sock:/var/run/docker.sock:ro
     networks:
       - observability
