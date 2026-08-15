@@ -18,6 +18,18 @@ sudo coreos-installer install --ignition-url https://github.com/cernicc/homelab/
 
 ## Provisioning a new machine
 
+Installing writes `ignition/alfred.ign` to disk once; everything after that runs unattended in a chain of gated, one-shot systemd services, each disabling itself and rebooting into the next stage. The three condition-file markers (`unverified`, `signed`, `bootstrapped` under `/etc/ucore-autorebase/`) are what let each unit know whether it still needs to run after a reboot.
+
+The automatic chain after step 2, in order:
+
+1. **Ignition (first boot only)** — creates the `cernic` user, hardens `sshd`, writes `/etc/containers/policy.json` + `registries.d` + `cosign.pub` (needed to verify the custom OS image later), and enables the systemd units below.
+2. **`ucore-unsigned-autorebase.service`** — runs if neither `unverified` nor `signed` exists yet. Does `rpm-ostree rebase --bypass-driver ostree-unverified-registry:.../ucore-server:latest` with no signature check, just to get the custom image's bits onto disk. Touches `unverified`, disables itself, reboots (**reboot #1**).
+3. **`ucore-signed-autorebase.service`** — runs once `unverified` is set but `signed` isn't. Does `bootc switch --enforce-container-sigpolicy`, which this time verifies the image's cosign signature against `policy.json`/`registries.d`/`cosign.pub`. Touches `signed`, disables itself, reboots (**reboot #2**).
+4. **`homelab-firewall.service`** and **`homelab-bootstrap.service`** — both gated on `signed` existing, so they only run once the machine is actually booted into the verified custom image. The firewall service sets up the `tailscale` zone, opens 80/443, and moves `incusbr` to the `trusted` zone. The bootstrap service enables linger for `cernic` and runs `chezmoi init --apply` to pull down this repo's dotfiles — which is what installs `homelab-sync.timer`.
+5. **`homelab-sync.timer`** (every 5 minutes from here on) — pulls `main`, applies dotfiles via `chezmoi apply`, and reconciles which stacks are running. Stacks stay stopped until `.env` exists (step 5 below).
+
+Steps 3, 4, and 6 below (MOK enrollment, Tailscale, DNS) are manual and can happen any time after reboot #2 — they don't block or get blocked by the automatic chain.
+
 ### 1. Boot from Fedora CoreOS ISO
 
 Download the ISO and burn it to a USB drive or mount it via IPMI/KVM:
