@@ -33,6 +33,12 @@ storage:
       contents:
         local: cosign.pub
 
+    - path: /etc/sudoers.d/wheel-nopasswd
+      mode: 0440
+      contents:
+        inline: |
+          %wheel ALL=(ALL) NOPASSWD: ALL
+
     - path: /etc/containers/policy.json
       mode: 0644
       overwrite: true

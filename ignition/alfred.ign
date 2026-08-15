@@ -50,6 +50,14 @@
         "mode": 420
       },
       {
+        "path": "/etc/sudoers.d/wheel-nopasswd",
+        "contents": {
+          "compression": "",
+          "source": "data:,%25wheel%20ALL%3D(ALL)%20NOPASSWD%3A%20ALL%0A"
+        },
+        "mode": 288
+      },
+      {
         "overwrite": true,
         "path": "/etc/containers/policy.json",
         "contents": {
