@@ -70,6 +70,7 @@ storage:
 
     - path: /etc/containers/registries.d/default.yaml
       mode: 0644
+      overwrite: true
       contents:
         inline: |
           docker:

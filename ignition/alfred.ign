@@ -75,6 +75,7 @@
         "mode": 420
       },
       {
+        "overwrite": true,
         "path": "/etc/containers/registries.d/default.yaml",
         "contents": {
           "compression": "",
