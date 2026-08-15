@@ -1,5 +1,5 @@
 [Unit]
-Description=Homelab Cron Service
+Description=Homelab Sync
 ConditionPathExists=!%h/homelab/.working
 
 [Service]

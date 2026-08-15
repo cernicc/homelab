@@ -15,10 +15,6 @@ boot_device:
     tpm2: true
 storage:
   directories:
-    - path: /etc/ucore-autorebase
-      mode: 0755
-    - path: /etc/ssh/sshd_config.d
-      mode: 0755
     - path: /etc/containers
       mode: 0755
     - path: /etc/pki/containers
@@ -31,16 +27,6 @@ storage:
       mode: 0644
       contents:
         inline: alfred
-
-    - path: /etc/ssh/sshd_config.d/99-hardening.conf
-      mode: 0600
-      contents:
-        inline: |
-          PasswordAuthentication no
-          PermitRootLogin no
-          AllowUsers cernic
-          X11Forwarding no
-          MaxAuthTries 3
 
     - path: /etc/pki/containers/cernicc-homelab.pub
       mode: 0644
@@ -77,55 +63,8 @@ storage:
             ghcr.io/cernicc/ucore-server:
               use-sigstore-attachments: true
 
-  links:
-    - path: /etc/localtime
-      target: ../usr/share/zoneinfo/Europe/Ljubljana
-
 systemd:
   units:
-    - name: sshd.service
-      enabled: true
-    - name: tailscaled.service
-      enabled: true
-    - name: incus.service
-      enabled: true
-    - name: bootc-fetch-apply-updates.timer
-      enabled: true
-      dropins:
-        - name: schedule.conf
-          contents: |
-            [Timer]
-            OnBootSec=
-            OnUnitInactiveSec=
-            RandomizedDelaySec=
-            OnCalendar=*-*-* 01:00:00 UTC
-            RandomizedDelaySec=30m
-            Persistent=true
-    - name: homelab-firewall.service
-      enabled: true
-      contents: |
-        [Unit]
-        Description=Configure firewall rules for homelab
-        ConditionPathExists=/etc/ucore-autorebase/signed
-        After=network-online.target tailscaled.service incus.service ucore-signed-autorebase.service
-        Wants=network-online.target tailscaled.service incus.service
-        [Service]
-        Type=oneshot
-        RemainAfterExit=yes
-        StandardOutput=journal+console
-        StandardError=journal+console
-        ExecStart=-/usr/bin/firewall-cmd --new-zone=tailscale --permanent
-        ExecStart=-/usr/bin/firewall-cmd --zone=tailscale --add-interface=tailscale0 --permanent
-        ExecStart=-/usr/bin/firewall-cmd --zone=tailscale --add-port=80/tcp --permanent
-        ExecStart=-/usr/bin/firewall-cmd --zone=tailscale --add-port=443/tcp --permanent
-        ExecStart=-/usr/bin/firewall-cmd --zone=tailscale --add-service=ssh --permanent
-        ExecStart=-/usr/bin/firewall-cmd --zone=trusted --change-interface=incusbr --permanent
-        ExecStart=-/usr/bin/firewall-cmd --add-service=ssh --permanent
-        ExecStart=-/usr/bin/firewall-cmd --add-port=80/tcp --permanent
-        ExecStart=-/usr/bin/firewall-cmd --add-port=443/tcp --permanent
-        ExecStart=/usr/bin/firewall-cmd --reload
-        [Install]
-        WantedBy=multi-user.target
     - name: ucore-unsigned-autorebase.service
       enabled: true
       contents: |
@@ -142,6 +81,7 @@ systemd:
         TimeoutStartSec=infinity
         StandardOutput=journal+console
         StandardError=journal+console
+        ExecStartPre=/usr/bin/mkdir -p /etc/ucore-autorebase
         ExecStart=/usr/bin/rpm-ostree rebase --bypass-driver ostree-unverified-registry:ghcr.io/cernicc/ucore-server:latest
         ExecStart=/usr/bin/touch /etc/ucore-autorebase/unverified
         ExecStart=/usr/bin/systemctl disable ucore-unsigned-autorebase.service
@@ -168,27 +108,5 @@ systemd:
         ExecStart=/usr/bin/touch /etc/ucore-autorebase/signed
         ExecStart=/usr/bin/systemctl disable ucore-signed-autorebase.service
         ExecStart=/usr/bin/systemctl reboot
-        [Install]
-        WantedBy=multi-user.target
-    - name: homelab-bootstrap.service
-      enabled: true
-      contents: |
-        [Unit]
-        Description=Bootstrap homelab dotfiles via chezmoi
-        ConditionPathExists=/etc/ucore-autorebase/signed
-        ConditionPathExists=!/etc/ucore-autorebase/bootstrapped
-        After=network-online.target ucore-signed-autorebase.service
-        Wants=network-online.target
-        [Service]
-        Type=oneshot
-        Restart=on-failure
-        RestartSec=30
-        TimeoutStartSec=infinity
-        StandardOutput=journal+console
-        StandardError=journal+console
-        ExecStart=/usr/sbin/loginctl enable-linger cernic
-        ExecStart=/usr/bin/runuser -l cernic -c '/usr/bin/chezmoi init --apply https://github.com/cernicc/homelab'
-        ExecStart=/usr/bin/touch /etc/ucore-autorebase/bootstrapped
-        ExecStart=/usr/bin/systemctl disable homelab-bootstrap.service
         [Install]
         WantedBy=multi-user.target

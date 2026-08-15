@@ -24,3 +24,17 @@ modules:
     files:
       - source: system
         destination: / # copies files/system/* (* means everything inside it) into your image's root folder /
+
+  - type: systemd
+    system:
+      enabled:
+        - sshd.service
+        - tailscaled.service
+        - incus.service
+        - bootc-fetch-apply-updates.timer
+        - homelab-firewall.service
+        - homelab-bootstrap.service
+
+  - type: script
+    snippets:
+      - ln -sf /usr/share/zoneinfo/Europe/Ljubljana /etc/localtime
