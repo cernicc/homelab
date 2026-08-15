@@ -1,0 +1,40 @@
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  stirling-pdf:
+    image: stirlingtools/stirling-pdf:2.14.3-fat
+    restart: unless-stopped
+    environment:
+      SECURITY_ENABLELOGIN: "false"
+      SYSTEM_DEFAULTLOCALE: en-US
+      UI_APPNAME: Stirling PDF
+      TZ: Europe/Ljubljana
+    volumes:
+      - tessdata:/usr/share/tessdata
+      - config:/configs
+      - logs:/logs
+    networks:
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.stirling-pdf.rule=Host(`pdf.${DOMAIN_NAME}`)
+      - traefik.http.routers.stirling-pdf.entrypoints=websecure
+      - traefik.http.routers.stirling-pdf.tls=true
+      - traefik.http.routers.stirling-pdf.tls.certresolver=letsencrypt
+      - traefik.http.services.stirling-pdf.loadbalancer.server.port=8080
+    logging: *logging
+
+volumes:
+  tessdata:
+  config:
+  logs:
+
+networks:
+  proxy:
+    name: proxy
+    external: true

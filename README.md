@@ -91,6 +91,7 @@ Stacks are managed as systemd user services via the `docker-compose@.service` te
 - `invoice-ninja` — see [stack README](stacks/invoice-ninja/README.md)
 - `media`
 - `observability`
+- `stirling-pdf` — see [stack README](stacks/stirling-pdf/README.md)
 - `traefik`
 - `whoami`
 
