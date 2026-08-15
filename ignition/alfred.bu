@@ -101,11 +101,15 @@ systemd:
         RemainAfterExit=yes
         StandardOutput=journal+console
         StandardError=journal+console
-        ExecStart=/usr/bin/firewall-cmd --new-zone=tailscale --permanent
-        ExecStart=/usr/bin/firewall-cmd --zone=tailscale --add-interface=tailscale0 --permanent
-        ExecStart=/usr/bin/firewall-cmd --zone=tailscale --add-port=80/tcp --permanent
-        ExecStart=/usr/bin/firewall-cmd --zone=tailscale --add-port=443/tcp --permanent
-        ExecStart=/usr/bin/firewall-cmd --zone=trusted --change-interface=incusbr --permanent
+        ExecStart=-/usr/bin/firewall-cmd --new-zone=tailscale --permanent
+        ExecStart=-/usr/bin/firewall-cmd --zone=tailscale --add-interface=tailscale0 --permanent
+        ExecStart=-/usr/bin/firewall-cmd --zone=tailscale --add-port=80/tcp --permanent
+        ExecStart=-/usr/bin/firewall-cmd --zone=tailscale --add-port=443/tcp --permanent
+        ExecStart=-/usr/bin/firewall-cmd --zone=tailscale --add-service=ssh --permanent
+        ExecStart=-/usr/bin/firewall-cmd --zone=trusted --change-interface=incusbr --permanent
+        ExecStart=-/usr/bin/firewall-cmd --add-service=ssh --permanent
+        ExecStart=-/usr/bin/firewall-cmd --add-port=80/tcp --permanent
+        ExecStart=-/usr/bin/firewall-cmd --add-port=443/tcp --permanent
         ExecStart=/usr/bin/firewall-cmd --reload
         [Install]
         WantedBy=multi-user.target
