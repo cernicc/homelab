@@ -12,7 +12,7 @@ StandardOutput=journal+console
 StandardError=journal+console
 ExecStartPre=/usr/bin/mkdir -p /etc/ucore-autorebase
 ExecStart=/usr/sbin/loginctl enable-linger cernic
-ExecStart=/usr/bin/runuser -l cernic -c '/usr/bin/chezmoi init --apply https://github.com/cernicc/homelab'
+ExecStart=/usr/bin/runuser -l cernic -c '/usr/bin/chezmoi init --source "$HOME/homelab" --apply https://github.com/cernicc/homelab'
 ExecStart=/usr/bin/touch /etc/ucore-autorebase/bootstrapped
 ExecStart=/usr/bin/systemctl disable homelab-bootstrap.service
 [Install]
