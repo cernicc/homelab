@@ -126,25 +126,26 @@ services:
       - traefik.http.services.radarr.loadbalancer.server.port=7878
     logging: *logging
 
-  jellyseerr:
-    image: fallenbagel/jellyseerr:1.6.0
+  seerr:
+    image: ghcr.io/seerr-team/seerr:v3.0.1
+    init: true
     restart: unless-stopped
     environment:
       TZ: Europe/Ljubljana
     volumes:
-      - jellyseerr-config:/app/config
+      - seerr-config:/app/config
     networks:
       - media
       - proxy
     labels:
       - traefik.enable=true
       - traefik.docker.network=proxy
-      - traefik.http.routers.jellyseerr.rule=Host(`jellyseerr.${DOMAIN_NAME}`)
-      - traefik.http.routers.jellyseerr.entrypoints=websecure
-      - traefik.http.routers.jellyseerr.service=jellyseerr
-      - traefik.http.routers.jellyseerr.tls=true
-      - traefik.http.routers.jellyseerr.tls.certresolver=letsencrypt
-      - traefik.http.services.jellyseerr.loadbalancer.server.port=5055
+      - traefik.http.routers.seerr.rule=Host(`seerr.${DOMAIN_NAME}`)
+      - traefik.http.routers.seerr.entrypoints=websecure
+      - traefik.http.routers.seerr.service=seerr
+      - traefik.http.routers.seerr.tls=true
+      - traefik.http.routers.seerr.tls.certresolver=letsencrypt
+      - traefik.http.services.seerr.loadbalancer.server.port=5055
     logging: *logging
 
   bazarr:
@@ -177,7 +178,7 @@ volumes:
   radarr-config:
   prowlarr-config:
   jellyfin-config:
-  jellyseerr-config:
+  seerr-config:
   bazarr-config:
 
 networks:
