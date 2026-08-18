@@ -1,0 +1,39 @@
+name: ai
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  hermes:
+    build: .
+    restart: unless-stopped
+    # Playwright/Chromium needs more than the default 64m /dev/shm.
+    shm_size: 1gb
+    environment:
+      TZ: Europe/Ljubljana
+      HERMES_DASHBOARD: "1"
+      OPENCODE_GO_API_KEY: ${OPENCODE_GO_API_KEY:?OPENCODE_GO_API_KEY must be set in .env}
+    volumes:
+      - hermes-data:/opt/data
+    networks:
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.ai.rule=Host(`ai.${DOMAIN_NAME}`)
+      - traefik.http.routers.ai.entrypoints=websecure
+      - traefik.http.routers.ai.tls=true
+      - traefik.http.routers.ai.tls.certresolver=letsencrypt
+      - traefik.http.services.ai.loadbalancer.server.port=9119
+    logging: *logging
+
+volumes:
+  hermes-data:
+
+networks:
+  proxy:
+    name: proxy
+    external: true
