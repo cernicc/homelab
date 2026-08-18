@@ -51,6 +51,30 @@ for _ in range(30):
         time.sleep(1)
 "
 
+# browser-use's MCP server (browser_use/mcp/server.py) does NOT read BU_CDP_URL --
+# that env var only exists for the separate `browser_harness` daemon used by the
+# interactive `browser-use <<PY ... PY` REPL, a different code path entirely. The MCP
+# server builds its BrowserProfile from ~/.config/browseruse/config.json, in a
+# "DB-style" schema (browser_profile/llm/agent dicts keyed by id, one entry flagged
+# "default": true) -- confirmed by reading browser_use/config.py directly. Without
+# this file, BrowserProfile has no cdp_url, so the MCP server tries to launch (and
+# manage) its own separate browser, which reliably hung for 30s per tool call and
+# then errored (BrowserStartEvent timeout) against this container's setup.
+mkdir -p /opt/data/.config/browseruse
+cat > /opt/data/.config/browseruse/config.json <<EOF
+{
+  "browser_profile": {
+    "browser-use-mcp-default": {
+      "id": "browser-use-mcp-default",
+      "default": true,
+      "cdp_url": "http://127.0.0.1:${CHROMIUM_CDP_PORT}"
+    }
+  },
+  "llm": {},
+  "agent": {}
+}
+EOF
+
 mkdir -p /opt/data
 cat > /opt/data/config.yaml <<EOF
 # OPENCODE_GO_API_KEY alone makes \`opencode-go\` an authenticated provider (Hermes
@@ -67,12 +91,11 @@ mcp_servers:
       # browser-use's own LLM calls (page reasoning) go through OpenAI-SDK-compatible
       # env vars. OpenCode Go exposes an OpenAI-compatible /v1/chat/completions at
       # https://opencode.ai/zen/go/v1 (see https://opencode.ai/docs/go/). Not a
-      # documented integration on either project's side -- verify on first boot.
+      # documented integration on either project's side -- verified working for
+      # browser_navigate/browser_get_html; browser_extract_content's own LLM call
+      # returned "No content extracted" in testing, worth another look.
       OPENAI_API_KEY: "${OPENCODE_GO_API_KEY}"
       OPENAI_BASE_URL: "https://opencode.ai/zen/go/v1"
-      # Points browser-use at the Chromium launched above instead of Browser Use
-      # Cloud (the docs' default recommendation for headless machines).
-      BU_CDP_URL: "http://127.0.0.1:${CHROMIUM_CDP_PORT}"
     # Chromium is launched once per container start (above), not per MCP-server
     # lifecycle, so these only recycle the browser-use subprocess itself, not the
     # underlying browser -- verify that's an acceptable tradeoff in practice.
