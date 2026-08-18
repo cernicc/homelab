@@ -13,24 +13,56 @@ if [ -z "${OPENCODE_GO_API_KEY:-}" ]; then
   exit 1
 fi
 
+# browser-use no longer launches/manages its own Chromium (no playwright/patchright
+# dependency any more -- see Dockerfile). It expects an existing browser reachable
+# over CDP via BU_CDP_URL. We launch our own headless Chromium here and point it at
+# that, rather than depending on Browser Use Cloud.
+CHROMIUM_CDP_PORT=9222
+CHROMIUM_PROFILE_DIR=/opt/data/chromium-profile
+mkdir -p "$CHROMIUM_PROFILE_DIR"
+
+chromium \
+  --headless=new \
+  --no-sandbox \
+  --disable-gpu \
+  --disable-dev-shm-usage \
+  --remote-debugging-port="$CHROMIUM_CDP_PORT" \
+  --remote-debugging-address=127.0.0.1 \
+  --remote-allow-origins=* \
+  --user-data-dir="$CHROMIUM_PROFILE_DIR" \
+  >/opt/data/chromium.log 2>&1 &
+
+# Wait (up to ~30s) for Chromium's CDP endpoint to come up before starting Hermes,
+# since browser-use will try to attach to it as soon as its first tool call runs.
+python3 -c "
+import urllib.request, time
+for _ in range(30):
+    try:
+        urllib.request.urlopen('http://127.0.0.1:${CHROMIUM_CDP_PORT}/json/version', timeout=1)
+        break
+    except Exception:
+        time.sleep(1)
+"
+
 mkdir -p /opt/data
 cat > /opt/data/config.yaml <<EOF
 mcp_servers:
   browser-use:
     command: "/opt/browser-use-venv/bin/browser-use"
     args: ["--mcp"]
-    # browser-use's own LLM calls (page reasoning) go through langchain-openai's
-    # ChatOpenAI, which resolves OPENAI_API_KEY/OPENAI_BASE_URL the way the OpenAI SDK
-    # always does. OpenCode Go exposes an OpenAI-compatible /v1/chat/completions at
-    # https://opencode.ai/zen/go/v1 (see https://opencode.ai/docs/go/), so that's
-    # what's wired in here. This isn't a documented integration on either project's
-    # side (Hermes' own OpenCode support is only for Hermes' own model, not for MCP
-    # subprocess env) -- verify it actually works on first boot (see README).
     env:
+      # browser-use's own LLM calls (page reasoning) go through OpenAI-SDK-compatible
+      # env vars. OpenCode Go exposes an OpenAI-compatible /v1/chat/completions at
+      # https://opencode.ai/zen/go/v1 (see https://opencode.ai/docs/go/). Not a
+      # documented integration on either project's side -- verify on first boot.
       OPENAI_API_KEY: "${OPENCODE_GO_API_KEY}"
       OPENAI_BASE_URL: "https://opencode.ai/zen/go/v1"
-    # Chromium stays resident in memory after browser-use's first tool call; recycle
-    # the process periodically instead of letting it grow unbounded.
+      # Points browser-use at the Chromium launched above instead of Browser Use
+      # Cloud (the docs' default recommendation for headless machines).
+      BU_CDP_URL: "http://127.0.0.1:${CHROMIUM_CDP_PORT}"
+    # Chromium is launched once per container start (above), not per MCP-server
+    # lifecycle, so these only recycle the browser-use subprocess itself, not the
+    # underlying browser -- verify that's an acceptable tradeoff in practice.
     idle_timeout_seconds: 900
     max_lifetime_seconds: 86400
 EOF

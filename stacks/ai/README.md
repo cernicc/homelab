@@ -8,6 +8,12 @@ browser-use's MCP server only speaks stdio — there's no HTTP/SSE transport in 
 
 `entrypoint.sh` regenerates `/opt/data/config.yaml`'s `mcp_servers` block on every container start from `OPENCODE_GO_API_KEY`, so the secret never gets committed to git. **This means `config.yaml` is not a place for manual/persistent edits** — it's overwritten on every restart. To add more MCP servers, edit `entrypoint.sh`.
 
+## Browser: self-launched Chromium over CDP, not Playwright
+
+browser-use no longer bundles/manages a Playwright-installed Chromium (confirmed against its actual `pyproject.toml`: depends on `cdp-use` + `browser-harness`, no `playwright`/`patchright`). It now expects to attach to a browser over CDP — via `BU_CDP_URL`/`BU_CDP_WS`, a paid Browser Use Cloud session, or an already-running local Chrome. The docs' own recommendation for a headless machine is Cloud Browsers; to stay fully self-hosted, the `Dockerfile` installs `chromium` via apt and `entrypoint.sh` launches it itself (`--headless=new`, CDP on `127.0.0.1:9222`, `--remote-allow-origins=*` to dodge Chrome's CDP-origin-check trap), then points browser-use at it via `BU_CDP_URL`.
+
+One consequence: Chromium is launched once per **container** start, not per MCP-server subprocess — so `idle_timeout_seconds`/`max_lifetime_seconds` below only recycle the `browser-use` process, not the underlying browser. Fine for a first pass; revisit if memory creeps up over long uptimes.
+
 ## Required `.env` vars
 
 - `OPENCODE_GO_API_KEY` — [OpenCode Go](https://opencode.ai/docs/go/), $10/mo subscription. Required; the container refuses to start without it (both at `compose up` time and in `entrypoint.sh`). Used for both Hermes' own model (Hermes has a built-in `opencode-go` provider preset — pick the actual model via `hermes model` on first boot) and browser-use's page-reasoning calls.
