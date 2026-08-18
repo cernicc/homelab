@@ -17,8 +17,15 @@ fi
 # dependency any more -- see Dockerfile). It expects an existing browser reachable
 # over CDP via BU_CDP_URL. We launch our own headless Chromium here and point it at
 # that, rather than depending on Browser Use Cloud.
+# Deliberately NOT on the /opt/data volume: a profile dir that survives container
+# restarts keeps its SingletonLock file around too (Chrome can't clean it up on a
+# hard SIGKILL), and every subsequent launch then fails immediately with "profile
+# appears to be in use by another Chromium process" -- crash-looping forever with no
+# error surfaced anywhere except /opt/data/chromium.log. /tmp is container-local and
+# guaranteed fresh on every start, so there's never a stale lock to hit. Cost: no
+# persistent cookies/login state across restarts -- acceptable for now.
 CHROMIUM_CDP_PORT=9222
-CHROMIUM_PROFILE_DIR=/opt/data/chromium-profile
+CHROMIUM_PROFILE_DIR=/tmp/chromium-profile
 mkdir -p "$CHROMIUM_PROFILE_DIR"
 
 chromium \
