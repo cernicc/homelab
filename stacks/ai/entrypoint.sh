@@ -1,11 +1,9 @@
 #!/bin/sh
-# Regenerates the mcp_servers section of config.yaml on every container start, wiring
-# in OPENCODE_GO_API_KEY from the container environment so it never has to be
-# committed to git.
+# Regenerates config.yaml's `model` key on every container start from
+# OPENCODE_GO_API_KEY, so nothing browser/model-related has to be committed to git.
 #
-# This means config.yaml on the hermes-data volume is NOT a place for manual/persistent
-# edits -- it gets overwritten on every restart. Add more MCP servers by editing this
-# script, not by running `hermes mcp add` by hand on the running container.
+# This means config.yaml on the hermes-data volume is NOT a place for manual/
+# persistent edits -- it gets overwritten on every restart. Change defaults here.
 set -eu
 
 if [ -z "${OPENCODE_GO_API_KEY:-}" ]; then
@@ -13,10 +11,10 @@ if [ -z "${OPENCODE_GO_API_KEY:-}" ]; then
   exit 1
 fi
 
-# browser-use no longer launches/manages its own Chromium (no playwright/patchright
-# dependency any more -- see Dockerfile). It expects an existing browser reachable
-# over CDP via BU_CDP_URL. We launch our own headless Chromium here and point it at
-# that, rather than depending on Browser Use Cloud.
+# Hermes' native browser tool (browser_exec, driven by the browser-use CLI on PATH --
+# see Dockerfile) attaches over CDP rather than launching/managing its own Chromium.
+# We launch a real headless Chromium ourselves and point Hermes at it, rather than
+# depending on Browser Use Cloud (the docs' default suggestion for headless machines).
 # Deliberately NOT on the /opt/data volume: a profile dir that survives container
 # restarts keeps its SingletonLock file around too (Chrome can't clean it up on a
 # hard SIGKILL), and every subsequent launch then fails immediately with "profile
@@ -39,8 +37,7 @@ chromium \
   --user-data-dir="$CHROMIUM_PROFILE_DIR" \
   >/opt/data/chromium.log 2>&1 &
 
-# Wait (up to ~30s) for Chromium's CDP endpoint to come up before starting Hermes,
-# since browser-use will try to attach to it as soon as its first tool call runs.
+# Wait (up to ~30s) for Chromium's CDP endpoint to come up before starting Hermes.
 python3 -c "
 import urllib.request, time
 for _ in range(30):
@@ -51,30 +48,6 @@ for _ in range(30):
         time.sleep(1)
 "
 
-# browser-use's MCP server (browser_use/mcp/server.py) does NOT read BU_CDP_URL --
-# that env var only exists for the separate `browser_harness` daemon used by the
-# interactive `browser-use <<PY ... PY` REPL, a different code path entirely. The MCP
-# server builds its BrowserProfile from ~/.config/browseruse/config.json, in a
-# "DB-style" schema (browser_profile/llm/agent dicts keyed by id, one entry flagged
-# "default": true) -- confirmed by reading browser_use/config.py directly. Without
-# this file, BrowserProfile has no cdp_url, so the MCP server tries to launch (and
-# manage) its own separate browser, which reliably hung for 30s per tool call and
-# then errored (BrowserStartEvent timeout) against this container's setup.
-mkdir -p /opt/data/.config/browseruse
-cat > /opt/data/.config/browseruse/config.json <<EOF
-{
-  "browser_profile": {
-    "browser-use-mcp-default": {
-      "id": "browser-use-mcp-default",
-      "default": true,
-      "cdp_url": "http://127.0.0.1:${CHROMIUM_CDP_PORT}"
-    }
-  },
-  "llm": {},
-  "agent": {}
-}
-EOF
-
 mkdir -p /opt/data
 cat > /opt/data/config.yaml <<EOF
 # OPENCODE_GO_API_KEY alone makes \`opencode-go\` an authenticated provider (Hermes
@@ -83,51 +56,31 @@ cat > /opt/data/config.yaml <<EOF
 # https://opencode.ai/zen/go/v1/models (e.g. kimi-k2.7-code, deepseek-v4-pro).
 model: "opencode-go/${AI_MODEL:-glm-5.3}"
 
-mcp_servers:
-  browser-use:
-    command: "/opt/browser-use-venv/bin/browser-use"
-    args: ["--mcp"]
-    env:
-      # browser-use's own LLM calls (page reasoning) go through OpenAI-SDK-compatible
-      # env vars. OpenCode Go exposes an OpenAI-compatible /v1/chat/completions at
-      # https://opencode.ai/zen/go/v1 (see https://opencode.ai/docs/go/). Not a
-      # documented integration on either project's side -- verified working for
-      # browser_navigate/browser_get_html; browser_extract_content's own LLM call
-      # returned "No content extracted" in testing, worth another look.
-      OPENAI_API_KEY: "${OPENCODE_GO_API_KEY}"
-      OPENAI_BASE_URL: "https://opencode.ai/zen/go/v1"
-    # Chromium is launched once per container start (above), not per MCP-server
-    # lifecycle, so these only recycle the browser-use subprocess itself, not the
-    # underlying browser -- verify that's an acceptable tradeoff in practice.
-    idle_timeout_seconds: 900
-    max_lifetime_seconds: 86400
-
-# Hermes ships its OWN built-in "browser" toolset (a browser_exec tool driven by the
-# browser_harness daemon -- a totally different code path from the browser-use MCP
-# server configured above, and one that was hanging/erroring in this container). Left
-# enabled, the model reached for that one instead of the working browser-use MCP
-# tools, since both are just "a browser tool" to it. Disabled here so browser-use is
-# the only browser capability it sees -- the actual point of this stack. This is
-# Hermes' default enabled-toolset list (hermes tools list) minus "browser"; keep in
-# sync if a Hermes upgrade adds new built-in toolsets.
-platform_toolsets:
-  cli:
-    - bfl
-    - clarify
-    - code_execution
-    - computer_use
-    - cronjob
-    - delegation
-    - file
-    - image_gen
-    - memory
-    - session_search
-    - skills
-    - terminal
-    - todo
-    - tts
-    - vision
-    - web
+# Explicit rather than relying on auto-detection (unset "" enables Browser Use mode
+# whenever the CLI is discoverable, which it now always is -- see Dockerfile PATH).
+# "off" would fall back to Hermes' OWN built-in browser_* tools instead, which is
+# NOT what this stack is for.
+browser:
+  backend: "browser-use"
 EOF
+
+# Read by tools/browser_use_cli.py::_resolve_backend_cdp (checked before Hermes'
+# config-based browser.cdp_url override) -- points Hermes' browser_exec tool (and
+# thus the browser-use CLI it spawns per call) at the Chromium launched above,
+# instead of it trying to launch/manage its own. Also the same env var browser-use's
+# own separate browser_harness daemon reads, so this covers both code paths.
+#
+# Deliberately NOT exporting OPENAI_API_KEY/OPENAI_BASE_URL globally here: Hermes
+# scrubs credentials from the env it hands to this subprocess by design (see
+# tools/browser_tool.py::_build_browser_env, inherit_credentials=False) and only
+# passes through a fixed allowlist (Browserbase/BROWSER_USE_API_KEY/Firecrawl keys)
+# -- there's no supported way to hand it a scoped LLM key for local-Chrome mode, and
+# setting OPENAI_API_KEY/OPENAI_BASE_URL at the Hermes process level instead of
+# scoped to the child broke Hermes' OWN top-level opencode-go calls too (confirmed:
+# "HTTP 401: Missing Authentication header" on a plain "reply pong" prompt with no
+# browser involved at all, purely from those two vars being set process-wide).
+# Turns out no key is needed anyway for browser_exec's navigate/read/eval actions --
+# confirmed end-to-end with BU_CDP_URL alone.
+export BU_CDP_URL="http://127.0.0.1:${CHROMIUM_CDP_PORT}"
 
 exec hermes gateway run
