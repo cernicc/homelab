@@ -70,7 +70,16 @@ cat > /opt/data/config.yaml <<EOF
 # has a built-in preset for it, no base_url needed); the model id still has to be
 # picked explicitly. Override by setting AI_MODEL to another id from
 # https://opencode.ai/zen/go/v1/models (e.g. kimi-k2.7-code, deepseek-v4-pro).
-model: "opencode-go/${AI_MODEL:-glm-5.3}"
+#
+# Mapping form, NOT the flat "provider/model" string form -- both are accepted by
+# \`hermes -z\`/the CLI, but hermes-webui's own streaming.py assumes the mapping form
+# unconditionally (\`_pp_cfg.get("model", {}).get("provider")\`) and throws
+# AttributeError: 'str' object has no attribute 'get' on the flat form, which
+# surfaces to the user as a generic "No LLM provider configured" error with no
+# hint the actual cause was a crash while reading a config key we control.
+model:
+  provider: opencode-go
+  default: "${AI_MODEL:-glm-5.3}"
 
 browser:
   cdp_url: "${CHROMIUM_WS_URL}"
