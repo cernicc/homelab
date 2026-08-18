@@ -75,7 +75,19 @@ from plugins.dashboard_auth.basic import hash_password
 print(hash_password('${AI_DASHBOARD_PASSWORD}'))
 ")
 
+# Without dashboard.basic_auth.secret, Hermes generates a random per-process
+# signing key, so every login gets invalidated by any restart -- not just this
+# stack being redeployed, but the routine every-5-minutes homelab-sync cycle too
+# (see the Dockerfile's version-pin comment). Generated once and persisted on the
+# /opt/data volume (unlike the Chromium profile, this genuinely should survive
+# restarts) rather than requiring yet another .env var.
 mkdir -p /opt/data
+AI_DASHBOARD_SECRET_FILE=/opt/data/.dashboard_secret
+if [ ! -s "$AI_DASHBOARD_SECRET_FILE" ]; then
+  python3 -c "import secrets; print(secrets.token_urlsafe(32))" > "$AI_DASHBOARD_SECRET_FILE"
+fi
+AI_DASHBOARD_SECRET=$(cat "$AI_DASHBOARD_SECRET_FILE")
+
 cat > /opt/data/config.yaml <<EOF
 # OPENCODE_GO_API_KEY alone makes \`opencode-go\` an authenticated provider (Hermes
 # has a built-in preset for it, no base_url needed); the model id still has to be
@@ -90,6 +102,14 @@ dashboard:
   basic_auth:
     username: "${AI_DASHBOARD_USER}"
     password_hash: "${AI_DASHBOARD_PASSWORD_HASH}"
+    secret: "${AI_DASHBOARD_SECRET}"
+
+# We never configured OpenRouter or Nous Portal, so Hermes' "auxiliary" lane
+# (small background tasks, separate from the main chat model) was failing every
+# call trying those as fallbacks and logging "payment / credit error" noise.
+# free_only keeps it from trying paid OpenRouter models it has no key for.
+auxiliary:
+  free_only: true
 EOF
 
 # NOT `exec hermes gateway run` directly: the base image's real ENTRYPOINT is

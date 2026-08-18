@@ -29,8 +29,14 @@ RUN apt-get update \
 # and Hermes runs as an unprivileged `hermes` user (uid 10000) that can't traverse
 # into /root -- every exec of a script shebanged at such a python fails with a
 # silent Permission Denied.
+# Version pinned deliberately: the homelab-sync timer runs `podman compose up -d
+# --build` for every enabled stack every 5 minutes unconditionally (see
+# ~/.local/bin/homelab-sync -- this is the only stack in the repo with a Dockerfile,
+# so it's the only one where that's not a no-op). An unpinned install here means
+# every rebuild could silently pick up a newer browser-use release mid-session.
+# Bump deliberately, not by accident.
 RUN uv venv --python /usr/bin/python3 /opt/browser-use-venv \
-    && uv pip install --python /opt/browser-use-venv/bin/python 'browser-use[cli]'
+    && uv pip install --python /opt/browser-use-venv/bin/python 'browser-use[cli]==0.13.7'
 
 # So Hermes' own CLI-discovery (tools/browser_use_cli.py::_find_cli, a plain
 # shutil.which("browser-use") probe) finds this pinned, offline copy instead of

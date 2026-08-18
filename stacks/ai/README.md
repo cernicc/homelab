@@ -31,6 +31,15 @@ Fixed by ending `entrypoint.sh` with `exec /opt/hermes/docker/entrypoint-dispatc
 
 That surfaced a second, real requirement: the dashboard **hard-refuses to bind to anything but `127.0.0.1` unless an auth provider is configured** — *"no unauthenticated public-bind option"*, by design, not a bug to route around. Since Traefik reaches this container over the docker network (not loopback), basic auth is now required just for the dashboard to be reachable at all, unlike `stirling-pdf`/`jellyfin`'s "tailnet is the only gate" setup. `entrypoint.sh` hashes `AI_DASHBOARD_PASSWORD` with Hermes' own `hash_password()` (via its venv python explicitly, not whatever's first on `PATH`) and writes `dashboard.basic_auth` into `config.yaml`.
 
+## Gotcha: this is the only stack in the repo with a `Dockerfile`, and `homelab-sync` rebuilds unconditionally
+
+`~/.local/bin/homelab-sync` (the script the 5-minute `homelab-sync.timer` runs) ends with `systemctl --user reload docker-compose@*.service` — **unconditionally, every cycle, for every enabled stack**, no diffing. The shared unit's `ExecReload` is `podman compose up -d --build`. For every other stack (fixed upstream `image:` tags, no `build:` key) that's a genuine no-op. `ai` is the only stack that actually builds something, so it's the only one where that matters:
+
+- An unpinned `pip install 'browser-use[cli]'` means every one of those 5-minute rebuilds could silently pick up a newer release mid-session — fixed by pinning the version (see `Dockerfile`).
+- Even fully cached/unchanged, a dashboard login got invalidated on every container recreate because the auth signing key was regenerated fresh each time — fixed by persisting `dashboard.basic_auth.secret` to the `/opt/data` volume (generated once, reused after) instead of leaving it random-per-process.
+
+None of this stops a *real* redeploy (an actual code change) from recreating the container and dropping active sessions — that's inherent to `--build` always being in the loop for this stack. It does mean routine, no-op sync cycles stop being disruptive.
+
 ## Required `.env` vars
 
 - `OPENCODE_GO_API_KEY` — [OpenCode Go](https://opencode.ai/docs/go/), $10/mo subscription. Required; the container refuses to start without it. This is Hermes' own model key — the browser tool doesn't need or get one (Hermes strips credentials from that subprocess's env by design; the navigate/read/click actions used here don't need their own LLM call anyway).
