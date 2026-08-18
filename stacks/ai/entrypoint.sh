@@ -101,6 +101,33 @@ mcp_servers:
     # underlying browser -- verify that's an acceptable tradeoff in practice.
     idle_timeout_seconds: 900
     max_lifetime_seconds: 86400
+
+# Hermes ships its OWN built-in "browser" toolset (a browser_exec tool driven by the
+# browser_harness daemon -- a totally different code path from the browser-use MCP
+# server configured above, and one that was hanging/erroring in this container). Left
+# enabled, the model reached for that one instead of the working browser-use MCP
+# tools, since both are just "a browser tool" to it. Disabled here so browser-use is
+# the only browser capability it sees -- the actual point of this stack. This is
+# Hermes' default enabled-toolset list (hermes tools list) minus "browser"; keep in
+# sync if a Hermes upgrade adds new built-in toolsets.
+platform_toolsets:
+  cli:
+    - bfl
+    - clarify
+    - code_execution
+    - computer_use
+    - cronjob
+    - delegation
+    - file
+    - image_gen
+    - memory
+    - session_search
+    - skills
+    - terminal
+    - todo
+    - tts
+    - vision
+    - web
 EOF
 
 exec hermes gateway run

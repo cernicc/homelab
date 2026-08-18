@@ -30,6 +30,12 @@ Traced by reading `browser_use/config.py` directly: the MCP server builds its br
 
 If this stack ever regresses to hanging ~30s per browser tool call, check `podman exec -u hermes ai-hermes-1 cat /opt/data/.config/browseruse/config.json` first — that file has to exist with a `default: true` entry carrying a live `cdp_url`, and `entrypoint.sh` has to actually be the thing writing it (not a leftover from manual debugging).
 
+## Gotcha: Hermes' own built-in "browser" toolset competes with browser-use
+
+Hermes ships its own native browser tool (`browser_exec`, toolset `browser`, `hermes tools list`) built on the same `browser_harness` daemon as the interactive REPL — a third, separate code path from both the MCP server and the fix above, and one that was failing in this container (`browser-harness doctor` → `[FAIL] daemon alive`). With both the native tool and the `browser-use` MCP server enabled, the model has no reason to prefer one over the other — it picked the broken native one (`browser_exec` with `new_tab()`/`js()`-style code) and every browsing task hung indefinitely.
+
+Fixed by disabling the native toolset in `config.yaml`'s `platform_toolsets.cli` list (`entrypoint.sh` writes the full default list minus `browser`), so `browser-use`'s MCP tools are the only browsing capability the model sees — which is the actual point of this stack. Confirmed via `hermes tools list` showing `✗ disabled browser` and `browser-use  all tools enabled`.
+
 ## Required `.env` vars
 
 - `OPENCODE_GO_API_KEY` — [OpenCode Go](https://opencode.ai/docs/go/), $10/mo subscription. Required; the container refuses to start without it (both at `compose up` time and in `entrypoint.sh`). Used for both Hermes' own model and browser-use's page-reasoning calls.
@@ -37,11 +43,12 @@ If this stack ever regresses to hanging ~30s per browser tool call, check `podma
 
 ### browser-use + OpenCode Go
 
-`entrypoint.sh` points browser-use's `OPENAI_API_KEY`/`OPENAI_BASE_URL` at `https://opencode.ai/zen/go/v1` (OpenCode Go's OpenAI-compatible endpoint). Not a documented integration on either project's side. Verified directly against the MCP protocol (see gotcha above) — `hermes -z` running an actual end-to-end browsing task through Hermes' own tool-calling loop still needs a real pass.
+`entrypoint.sh` points browser-use's `OPENAI_API_KEY`/`OPENAI_BASE_URL` at `https://opencode.ai/zen/go/v1` (OpenCode Go's OpenAI-compatible endpoint). Not a documented integration on either project's side, but confirmed working for `browser_navigate`/`browser_get_html` against the raw MCP protocol.
 
 ## First-boot checklist
 
 - `podman compose logs -f hermes` starts cleanly and the container doesn't restart-loop. ✓ verified
 - `hermes mcp list` inside the container shows `browser-use` connected (not parked). If it says `Connection closed`, see the venv-permissions gotcha above.
-- `hermes -z "Use the browser tool to navigate to https://example.com and tell me the exact page title."` completes and gives a real answer, not just a raw protocol call. If it hangs, see the `config.json`/`BU_CDP_URL` gotcha above.
+- `hermes tools list` shows `✗ disabled browser` and `browser-use  all tools enabled`. If `browser` is still enabled, the model may reach for Hermes' own broken native browser tool instead — see gotcha above.
+- `hermes -z "Use the browser tool to navigate to https://example.com and tell me the exact page title."` completes and gives a real answer. If it hangs, see the gotchas above (`config.json`/`cdp_url` first, then the native `browser` toolset).
 - The dashboard on port 9119 has no auth of its own documented — same trust model as `stirling-pdf`/`jellyfin` (anyone reachable on the tailnet can use it). Check whether Hermes has grown an auth option worth turning on, given this agent can take real actions on the web.
