@@ -59,11 +59,11 @@ for _ in range(30):
 ")
 
 # Hermes' own built-in dashboard is NOT enabled here (no HERMES_DASHBOARD env var)
-# -- hermes-webui (a separate service, see docker-compose.yml) is the one exposed
-# via Traefik instead, so there's no second auth surface / password to manage on
-# this container. `hermes gateway run` still goes through s6 supervision below for
-# auto-restart-on-crash and to start the gateway API server (API_SERVER_ENABLED,
-# set via docker-compose.yml) that hermes-webui's health checks talk to.
+# -- hermes-webui (below) is what's exposed via Traefik instead, so there's no
+# second auth surface / password to manage on this container. `hermes gateway run`
+# still goes through s6 supervision below for auto-restart-on-crash and to start
+# the gateway API server (API_SERVER_ENABLED, set via docker-compose.yml) that
+# hermes-webui's own health check talks to.
 mkdir -p /opt/data
 cat > /opt/data/config.yaml <<EOF
 # OPENCODE_GO_API_KEY alone makes \`opencode-go\` an authenticated provider (Hermes
@@ -82,6 +82,32 @@ browser:
 auxiliary:
   free_only: true
 EOF
+
+if [ -z "${HERMES_WEBUI_PASSWORD:-}" ] || [ -z "${API_SERVER_KEY:-}" ]; then
+  echo "ai: HERMES_WEBUI_PASSWORD/API_SERVER_KEY are not set -- refusing to start (see stacks/ai/README.md)" >&2
+  exit 1
+fi
+
+# hermes-webui (https://github.com/nesquena/hermes-webui) -- runs as a background
+# process in this same container/namespace (see Dockerfile for why: a real
+# rootless-Podman wall when this was a separate container sharing a volume).
+# WANTED_UID/GID=10000 matches this image's actual hermes user, so its own
+# usermod/chown alignment succeeds this time (same namespace, real root -- unlike
+# the cross-container attempt). HERMES_API_URL is loopback now, not a
+# service-name DNS lookup, for the same reason. Not s6-supervised (unlike the
+# gateway below) -- a crash here doesn't take down the agent itself, just the
+# web UI; promote to a proper s6 service later if that turns out to matter.
+# Log kept off the persistent volume deliberately, same reasoning as
+# chromium.log: nothing here needs to survive a restart, and it'd just grow
+# forever otherwise.
+env \
+  WANTED_UID=10000 \
+  WANTED_GID=10000 \
+  HERMES_WEBUI_HOST=0.0.0.0 \
+  HERMES_WEBUI_PORT=8787 \
+  HERMES_API_URL=http://127.0.0.1:8642 \
+  HERMES_WEBUI_GATEWAY_API_KEY="$API_SERVER_KEY" \
+  /hermeswebui_init.bash >/tmp/hermes-webui.log 2>&1 &
 
 # NOT `exec hermes gateway run` directly: the base image's real ENTRYPOINT is
 # /opt/hermes/docker/entrypoint-dispatch.sh, which hands off to s6-overlay's

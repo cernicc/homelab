@@ -16,10 +16,26 @@
 # Browser Use Cloud is the docs' answer for a headless machine; to stay fully
 # self-hosted, we install real Chromium via apt and launch it ourselves (see
 # entrypoint.sh).
+#
+# hermes-webui (https://github.com/nesquena/hermes-webui) is merged into this
+# SAME image/container rather than run as a separate one sharing a volume with
+# this agent. A separate-container attempt hit a hard rootless-Podman wall: each
+# container gets its own user namespace, so container B's "root" can't chown a
+# file container A wrote even when both agree the file is "owned by uid 10000"
+# from their own numeric point of view -- reproduced directly with a bare
+# `podman run ... chown <uid>:<uid> <file-already-that-uid>` => Permission
+# denied. Not an app bug; see stacks/ai/README.md. Fixed by not having two
+# containers at all: hermes-webui's own init script already probes $HERMES_HOME
+# and /opt/hermes directly as fallbacks (confirmed by reading its
+# hermeswebui_init.bash), so once it's in this container it finds this
+# container's real Hermes state and agent source on its own -- no path aliasing
+# needed.
+FROM ghcr.io/nesquena/hermes-webui:latest AS webui
+
 FROM nousresearch/hermes-agent:latest
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends chromium \
+    && apt-get install -y --no-install-recommends chromium rsync git \
     && rm -rf /var/lib/apt/lists/*
 
 # Dedicated venv so browser-use's own dependency pins can't collide with Hermes'
@@ -42,6 +58,25 @@ RUN uv venv --python /usr/bin/python3 /opt/browser-use-venv \
 # shutil.which("browser-use") probe) finds this pinned, offline copy instead of
 # falling back to a live `uvx` fetch from PyPI on every single browser_exec call.
 ENV PATH="/opt/browser-use-venv/bin:${PATH}"
+
+# hermes-webui's runtime user -- its own init script aligns this uid/gid to
+# WANTED_UID/WANTED_GID (set to this image's real hermes uid, 10000, in
+# entrypoint.sh) via usermod/groupmod at container start, then chowns
+# /home/hermeswebui accordingly. uv is already on PATH from the base image, no
+# need to install hermes-webui's own copy. The compiled SQLite (their base image
+# ships an updated build -- see their Dockerfile's SQLITE_VERSION comment, fixing
+# a WAL corruption bug the Debian package hasn't backported) is copied in too,
+# since their Python code checks the linked version at import time.
+RUN groupadd -g 1024 hermeswebui \
+    && useradd -u 1024 -d /home/hermeswebui -g hermeswebui -G users -s /bin/bash -m hermeswebui \
+    && mkdir -p /app /uv_cache /workspace \
+    && chown -R hermeswebui:hermeswebui /home/hermeswebui /app /uv_cache /workspace
+
+COPY --from=webui --chown=root:root /apptoo /apptoo
+COPY --from=webui /hermeswebui_init.bash /hermeswebui_init.bash
+COPY --from=webui /usr/local/lib/libsqlite3* /usr/local/lib/
+COPY --from=webui /etc/ld.so.conf.d/000-usr-local-lib.conf /etc/ld.so.conf.d/000-usr-local-lib.conf
+RUN ldconfig
 
 COPY entrypoint.sh /usr/local/bin/ai-entrypoint.sh
 RUN chmod +x /usr/local/bin/ai-entrypoint.sh

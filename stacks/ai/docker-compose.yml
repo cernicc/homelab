@@ -17,57 +17,17 @@ services:
       OPENCODE_GO_API_KEY: ${OPENCODE_GO_API_KEY:?OPENCODE_GO_API_KEY must be set in .env}
       # Optional: any model id from https://opencode.ai/zen/go/v1/models (default: glm-5.3)
       AI_MODEL: ${AI_MODEL:-}
-      # OpenAI-compatible gateway API, internal-only (not Traefik-routed) -- hermes-webui's
-      # Tasks/cron health check talks to this over the docker network.
+      # OpenAI-compatible gateway API, loopback-only -- hermes-webui's Tasks/cron
+      # health check talks to this (both run in this same container).
       API_SERVER_ENABLED: "true"
-      API_SERVER_HOST: "0.0.0.0"
+      API_SERVER_HOST: "127.0.0.1"
       API_SERVER_KEY: ${API_SERVER_KEY:?API_SERVER_KEY must be set in .env (any string, 16+ chars)}
+      # hermes-webui (https://github.com/nesquena/hermes-webui) login -- see
+      # stacks/ai/README.md for why it's merged into this container/service
+      # rather than run as its own.
+      HERMES_WEBUI_PASSWORD: ${HERMES_WEBUI_PASSWORD:?HERMES_WEBUI_PASSWORD must be set in .env}
     volumes:
       - hermes-data:/opt/data
-      # hermes-webui needs a copy of the agent's installed source+deps to build a
-      # matching Python environment for itself (its own docs call this "hermes-agent-src").
-      # Populated automatically from this image's /opt/hermes on first `up` -- see the
-      # note on the volume definition below about what happens if the image ever changes.
-      - hermes-src:/opt/hermes
-    networks:
-      - proxy
-    logging: *logging
-
-  # Third-party web UI for the Hermes Agent running in the `hermes` service above
-  # (https://github.com/nesquena/hermes-webui) -- replaces Hermes' own built-in
-  # dashboard as the thing exposed at ai.${DOMAIN_NAME}. It reads the agent's state
-  # directly (shares the hermes-data volume) rather than being a separate agent
-  # instance of its own.
-  hermes-webui:
-    image: ghcr.io/nesquena/hermes-webui:latest
-    restart: unless-stopped
-    depends_on:
-      - hermes
-    environment:
-      HERMES_WEBUI_HOST: "0.0.0.0"
-      HERMES_WEBUI_PORT: "8787"
-      HERMES_WEBUI_STATE_DIR: /home/hermeswebui/.hermes/webui
-      HERMES_API_URL: http://hermes:8642
-      HERMES_WEBUI_GATEWAY_API_KEY: ${API_SERVER_KEY:?API_SERVER_KEY must be set in .env (any string, 16+ chars)}
-      HERMES_WEBUI_PASSWORD: ${HERMES_WEBUI_PASSWORD:?HERMES_WEBUI_PASSWORD must be set in .env}
-      # The image's own hermes user is uid/gid 10000 (confirmed against the actual
-      # running hermes container -- NOT the 1000 upstream's own compose examples
-      # default to), so files hermes-webui writes onto the shared hermes-data volume
-      # stay readable/writable by the hermes service too.
-      WANTED_UID: "10000"
-      WANTED_GID: "10000"
-      # hermes-webui's startup fixer tries to recursively chown the whole shared
-      # volume to WANTED_UID/GID -- and hard-exits ("ERROR: Failed to set owner")
-      # on rootless podman even though the files already ARE owned by 10000:10000
-      # (the fixer itself lacks the privilege to touch them, chown-to-same-owner or
-      # not). Documented upstream for exactly this bind-mount-onto-existing-dir
-      # symptom (its own compose comments cite issues #1389/#1399): skip the
-      # fixer entirely since the volume's ownership already matches.
-      HERMES_SKIP_CHMOD: "1"
-    volumes:
-      - hermes-data:/home/hermeswebui/.hermes
-      - hermes-src:/home/hermeswebui/.hermes/hermes-agent:ro
-      - hermes-webui-workspace:/workspace
     networks:
       - proxy
     labels:
@@ -82,14 +42,6 @@ services:
 
 volumes:
   hermes-data:
-  # Auto-populated from the hermes image's /opt/hermes the first time a container
-  # mounts it (standard behavior for a fresh named volume over a non-empty image
-  # path) -- NOT refreshed automatically after that. If the hermes image is ever
-  # rebuilt with a materially different Hermes version, this volume needs a manual
-  # `podman volume rm ai_hermes-src` (stack stopped first) to pick it up, or
-  # hermes-webui's own Python env will drift from what the agent actually runs.
-  hermes-src:
-  hermes-webui-workspace:
 
 networks:
   proxy:
