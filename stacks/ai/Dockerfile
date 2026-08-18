@@ -1,16 +1,14 @@
 # Hermes Agent (https://hermes-agent.nousresearch.com/) with browser-use
-# (https://github.com/browser-use/browser-use) as a custom MCP server.
-#
-# browser-use's MCP server only speaks stdio -- there is no HTTP/SSE transport in the
-# open-source package, and neither project documents running it as a separate
-# networked service. So it's installed straight into the Hermes image and spawned as
-# a local stdio subprocess (config.yaml mcp_servers, see entrypoint.sh) rather than
-# run as a sidecar container.
-#
-# Hermes ALSO ships its own native browser integration (a `browser_exec` tool,
-# toolset "browser", driven by this same browser-use CLI) -- see the "known
-# limitation" in stacks/ai/README.md for why the MCP server is what's actually
-# wired up as primary despite that existing.
+# (https://github.com/browser-use/browser-use) as its browsing backend, using
+# Hermes' own NATIVE integration
+# (https://hermes-agent.nousresearch.com/docs/user-guide/features/browser) --
+# a `browser_exec` tool it drives itself, using the same browser-use CLI, rather
+# than a hand-rolled MCP server. An earlier version of this stack wired browser-use
+# in as a custom MCP server instead; that turned out to be unnecessary complexity
+# fighting Hermes' own already-built integration, and the real fix was just
+# pointing `browser.cdp_url` (the documented config key -- wants the actual
+# ws://.../devtools/browser/<id> URL, not a bare http://host:port) at the right
+# place. See entrypoint.sh and stacks/ai/README.md for the full story.
 #
 # browser-use itself no longer bundles/manages a Playwright-installed Chromium
 # (confirmed: current pyproject.toml depends on cdp-use + browser-harness, not
