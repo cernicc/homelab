@@ -111,6 +111,7 @@ env \
   HERMES_WEBUI_STATE_DIR=/opt/data/webui \
   HERMES_API_URL=http://127.0.0.1:8642 \
   HERMES_WEBUI_GATEWAY_API_KEY="$API_SERVER_KEY" \
+  HERMES_WEBUI_AGENT_DIR=/opt/hermes \
   /hermeswebui_init.bash >/tmp/hermes-webui.log 2>&1 &
 
 # NOT `exec hermes gateway run` directly: the base image's real ENTRYPOINT is
