@@ -100,11 +100,15 @@ fi
 # Log kept off the persistent volume deliberately, same reasoning as
 # chromium.log: nothing here needs to survive a restart, and it'd just grow
 # forever otherwise.
+# HERMES_WEBUI_STATE_DIR (its own UI-specific state -- sessions/workspace list/etc,
+# separate from the actual Hermes agent state under HERMES_HOME) goes on the
+# persistent volume, unlike the log below -- no reason to lose it every restart.
 env \
   WANTED_UID=10000 \
   WANTED_GID=10000 \
   HERMES_WEBUI_HOST=0.0.0.0 \
   HERMES_WEBUI_PORT=8787 \
+  HERMES_WEBUI_STATE_DIR=/opt/data/webui \
   HERMES_API_URL=http://127.0.0.1:8642 \
   HERMES_WEBUI_GATEWAY_API_KEY="$API_SERVER_KEY" \
   /hermeswebui_init.bash >/tmp/hermes-webui.log 2>&1 &
