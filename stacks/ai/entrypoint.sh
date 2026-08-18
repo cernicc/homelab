@@ -12,6 +12,11 @@ if [ -z "${OPENCODE_GO_API_KEY:-}" ]; then
   exit 1
 fi
 
+if [ -z "${AI_DASHBOARD_USER:-}" ] || [ -z "${AI_DASHBOARD_PASSWORD:-}" ]; then
+  echo "ai: AI_DASHBOARD_USER/AI_DASHBOARD_PASSWORD are not set -- refusing to start (see stacks/ai/README.md)" >&2
+  exit 1
+fi
+
 # Hermes' native browser tool (browser_exec, driven by the browser-use CLI on PATH --
 # see Dockerfile) attaches to an existing browser over CDP rather than launching its
 # own. We launch a real headless Chromium ourselves and point Hermes at it, rather
@@ -58,6 +63,18 @@ for _ in range(30):
         time.sleep(1)
 ")
 
+# The dashboard hard-refuses to bind to anything but 127.0.0.1 unless an auth
+# provider is configured ("no unauthenticated public-bind option" -- a real
+# security gate, not something to work around). Traefik reaches this container
+# over the docker network, not loopback, so basic auth is required for the
+# dashboard to be reachable at all, not just for the sake of it. Hashed with
+# Hermes' own venv python explicitly (not whatever's first on PATH, which is our
+# browser-use venv).
+AI_DASHBOARD_PASSWORD_HASH=$(/opt/hermes/.venv/bin/python3 -c "
+from plugins.dashboard_auth.basic import hash_password
+print(hash_password('${AI_DASHBOARD_PASSWORD}'))
+")
+
 mkdir -p /opt/data
 cat > /opt/data/config.yaml <<EOF
 # OPENCODE_GO_API_KEY alone makes \`opencode-go\` an authenticated provider (Hermes
@@ -68,6 +85,22 @@ model: "opencode-go/${AI_MODEL:-glm-5.3}"
 
 browser:
   cdp_url: "${CHROMIUM_WS_URL}"
+
+dashboard:
+  basic_auth:
+    username: "${AI_DASHBOARD_USER}"
+    password_hash: "${AI_DASHBOARD_PASSWORD_HASH}"
 EOF
 
-exec hermes gateway run
+# NOT `exec hermes gateway run` directly: the base image's real ENTRYPOINT is
+# /opt/hermes/docker/entrypoint-dispatch.sh, which hands off to s6-overlay's
+# /init -- the thing that actually brings up the dashboard as a separately
+# supervised service when HERMES_DASHBOARD=1 (see `hermes gateway run --help`:
+# "gateway run is automatically redirected to the supervised s6 service, so the
+# gateway gets auto-restart on crash, plus a supervised dashboard"). Calling
+# `hermes gateway run` straight from our own entrypoint bypasses all of that --
+# the gateway itself starts fine, but nothing ever listens on 9119, and Traefik
+# 502s. We're already PID 1 here, so this exec correctly routes into the real
+# /init path (see entrypoint-dispatch.sh's own `[ "$$" -eq 1 ]` check) instead of
+# its non-PID-1 fallback.
+exec /opt/hermes/docker/entrypoint-dispatch.sh gateway run

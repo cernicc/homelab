@@ -18,6 +18,8 @@ services:
       OPENCODE_GO_API_KEY: ${OPENCODE_GO_API_KEY:?OPENCODE_GO_API_KEY must be set in .env}
       # Optional: any model id from https://opencode.ai/zen/go/v1/models (default: glm-5.3)
       AI_MODEL: ${AI_MODEL:-}
+      AI_DASHBOARD_USER: ${AI_DASHBOARD_USER:?AI_DASHBOARD_USER must be set in .env}
+      AI_DASHBOARD_PASSWORD: ${AI_DASHBOARD_PASSWORD:?AI_DASHBOARD_PASSWORD must be set in .env}
     volumes:
       - hermes-data:/opt/data
     networks:
