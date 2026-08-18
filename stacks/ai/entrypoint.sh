@@ -46,6 +46,12 @@ for _ in range(30):
 
 mkdir -p /opt/data
 cat > /opt/data/config.yaml <<EOF
+# OPENCODE_GO_API_KEY alone makes \`opencode-go\` an authenticated provider (Hermes
+# has a built-in preset for it, no base_url needed); the model id still has to be
+# picked explicitly. Override by setting AI_MODEL to another id from
+# https://opencode.ai/zen/go/v1/models (e.g. kimi-k2.7-code, deepseek-v4-pro).
+model: "opencode-go/${AI_MODEL:-glm-5.3}"
+
 mcp_servers:
   browser-use:
     command: "/opt/browser-use-venv/bin/browser-use"
@@ -66,11 +72,5 @@ mcp_servers:
     idle_timeout_seconds: 900
     max_lifetime_seconds: 86400
 EOF
-
-# Hermes' own model provider (separate from browser-use above). OPENCODE_GO_API_KEY
-# alone is enough to make `opencode-go` show up as an authenticated provider -- no
-# base_url needed, Hermes has a built-in preset for it. Pick the actual model via
-# `hermes model` (dashboard or CLI) on first boot; not set declaratively here since
-# the exact model id under opencode-go isn't pinned down.
 
 exec hermes gateway run

@@ -25,8 +25,15 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # Dedicated venv so browser-use's own dependency pins can't collide with Hermes'
-# uv-managed environment.
-RUN uv venv /opt/browser-use-venv \
+# uv-managed environment. Explicitly --python /usr/bin/python3 (the base image's own
+# system interpreter) rather than letting `uv venv` pick/download its own managed
+# CPython build: that build lands in /root/.local/share/uv (owned by root, mode 700),
+# and Hermes' gateway runs its MCP subprocesses as an unprivileged `hermes` user
+# (uid 10000) that can't traverse into /root -- every exec of a script shebanged at
+# such a python fails with a silent Permission Denied, which Hermes' MCP client just
+# reports as "Connection closed" after exhausting its retries. /usr/bin/python3 has
+# normal world-readable permissions, same as everything else in this image.
+RUN uv venv --python /usr/bin/python3 /opt/browser-use-venv \
     && uv pip install --python /opt/browser-use-venv/bin/python 'browser-use[cli]'
 
 COPY entrypoint.sh /usr/local/bin/ai-entrypoint.sh

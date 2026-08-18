@@ -16,6 +16,8 @@ services:
       TZ: Europe/Ljubljana
       HERMES_DASHBOARD: "1"
       OPENCODE_GO_API_KEY: ${OPENCODE_GO_API_KEY:?OPENCODE_GO_API_KEY must be set in .env}
+      # Optional: any model id from https://opencode.ai/zen/go/v1/models (default: glm-5.3)
+      AI_MODEL: ${AI_MODEL:-}
     volumes:
       - hermes-data:/opt/data
     networks:

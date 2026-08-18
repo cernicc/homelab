@@ -14,20 +14,23 @@ browser-use no longer bundles/manages a Playwright-installed Chromium (confirmed
 
 One consequence: Chromium is launched once per **container** start, not per MCP-server subprocess — so `idle_timeout_seconds`/`max_lifetime_seconds` below only recycle the `browser-use` process, not the underlying browser. Fine for a first pass; revisit if memory creeps up over long uptimes.
 
+## Gotcha: the venv's Python must NOT be `uv`'s managed interpreter
+
+`uv venv` defaults to downloading/using its own managed CPython build, which lands under `/root/.local/share/uv/python/...` (owned by root, mode `700`). Hermes' gateway runs as an unprivileged `hermes` user (uid 10000) and spawns MCP subprocesses as that same user — which can't traverse into `/root` at all. Every exec of a script shebanged at such a python silently fails with `Permission denied`, and Hermes' MCP client just reports it as `Connection closed` after burning its retry budget — no useful error surfaces anywhere in `podman logs`. Confirmed by reproducing the exact failure with `hermes mcp test browser-use`, then tracing it to a plain `su hermes -c '/opt/browser-use-venv/bin/browser-use-real --help'` → `Permission denied`.
+
+Fix: `uv venv --python /usr/bin/python3 /opt/browser-use-venv` — pins it to the base image's own system interpreter (normal `/usr` permissions, world-executable) instead of a fresh root-owned one. If this stack ever gets a `Connection closed` MCP error again, check this first: `podman exec ai-hermes-1 su hermes -s /bin/sh -c '/opt/browser-use-venv/bin/browser-use --mcp </dev/null'` should exit `0` silently, not `Permission denied`.
+
 ## Required `.env` vars
 
-- `OPENCODE_GO_API_KEY` — [OpenCode Go](https://opencode.ai/docs/go/), $10/mo subscription. Required; the container refuses to start without it (both at `compose up` time and in `entrypoint.sh`). Used for both Hermes' own model (Hermes has a built-in `opencode-go` provider preset — pick the actual model via `hermes model` on first boot) and browser-use's page-reasoning calls.
+- `OPENCODE_GO_API_KEY` — [OpenCode Go](https://opencode.ai/docs/go/), $10/mo subscription. Required; the container refuses to start without it (both at `compose up` time and in `entrypoint.sh`). Used for both Hermes' own model and browser-use's page-reasoning calls.
+- `AI_MODEL` — optional, any model id from `https://opencode.ai/zen/go/v1/models` (e.g. `kimi-k2.7-code`, `deepseek-v4-pro`). Defaults to `glm-5.3`. Sets `model: opencode-go/<id>` in `config.yaml` on every boot — Hermes has a built-in `opencode-go` provider preset, no `base_url` needed.
 
-### browser-use + OpenCode Go — unverified
+### browser-use + OpenCode Go — confirmed working
 
-`entrypoint.sh` points browser-use's `OPENAI_API_KEY`/`OPENAI_BASE_URL` at `https://opencode.ai/zen/go/v1` (OpenCode Go's OpenAI-compatible endpoint). This is **not a documented integration on either project's side** — Hermes' OpenCode support only covers Hermes' own model selection, and browser-use's MCP server docs only mention `OPENAI_API_KEY`/`ANTHROPIC_API_KEY`, nothing about OpenCode or a custom base URL. It's inferred from browser-use using `ChatOpenAI` (which resolves `OPENAI_BASE_URL` the way the OpenAI SDK normally does) plus OpenCode Go being genuinely OpenAI-compatible. **Confirm it actually works on first boot** — since there's no other provider configured, if this routing doesn't work browser-use has no working key at all and that MCP tool will just fail (Hermes itself is unaffected).
+`entrypoint.sh` points browser-use's `OPENAI_API_KEY`/`OPENAI_BASE_URL` at `https://opencode.ai/zen/go/v1` (OpenCode Go's OpenAI-compatible endpoint). Not a documented integration on either project's side, but verified end-to-end on first deploy: `hermes -z "Use the browser tool to navigate to https://example.com and tell me the exact page title."` successfully drove the self-launched Chromium and got a real answer back through OpenCode Go.
 
 ## First-boot checklist
 
-This setup is assembled from Hermes/browser-use docs rather than a tested reference deployment (both are fast-moving projects) — verify on first deploy:
-
-- `podman compose logs -f hermes` starts cleanly and the container doesn't restart-loop.
-- The base `nousresearch/hermes-agent` image's own entrypoint doesn't require anything beyond `hermes gateway run` to reach a working gateway (this Dockerfile fully replaces it with `entrypoint.sh`, bypassing whatever init the upstream image normally does).
-- `hermes model` (or the dashboard) shows `opencode-go` as an authenticated provider if `OPENCODE_GO_API_KEY` is set, and pick an actual model — it isn't pinned declaratively here.
-- Ask Hermes (via the dashboard or gateway API) to do something requiring the browser — confirms the `browser-use` MCP entry actually loaded (`hermes mcp list` inside the container should show it as connected) **and** that the OpenCode Go routing above actually works.
+- `podman compose logs -f hermes` starts cleanly and the container doesn't restart-loop. ✓ verified
+- `hermes mcp list` inside the container shows `browser-use` connected (not parked). If it says `Connection closed`, see the venv-permissions gotcha above first.
 - The dashboard on port 9119 has no auth of its own documented — same trust model as `stirling-pdf`/`jellyfin` (anyone reachable on the tailnet can use it). Check whether Hermes has grown an auth option worth turning on, given this agent can take real actions on the web.
