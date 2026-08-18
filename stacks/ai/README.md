@@ -69,6 +69,7 @@ None of this stops a *real* redeploy (an actual code change) from recreating the
 
 - `podman compose logs -f hermes` starts cleanly and the container doesn't restart-loop. ✓ verified
 - `hermes -z "Use the browser tool to navigate to https://example.com and tell me the exact page title."` completes and gives a real, correct answer. ✓ verified repeatedly (4/4 test runs, including a fresh container from a clean deploy)
-- `podman compose logs hermes` shows `hermeswebui_init.bash`'s output finding `/opt/hermes` for the agent source (not the "agent source not found... reduced functionality" warning) and finishing with `Running hermes-webui`.
-- `ai.${DOMAIN_NAME}` loads `hermes-webui` (not a 502) and prompts for the `HERMES_WEBUI_PASSWORD` login, and its Tasks/System gateway status shows reachable (confirms `API_SERVER_KEY` is set and the loopback gateway API is up).
-- A chat sent through `hermes-webui` can actually use the browser tool — same prompt as above, through the UI instead of `hermes -z`.
+- `podman exec ai-hermes-1 cat /tmp/hermes-webui.log` shows `agent dir: /opt/hermes [ok]`, `config file: /opt/data/config.yaml (found)`, and `Hermes Web UI listening on http://0.0.0.0:8787`. ✓ verified
+- `podman exec ai-hermes-1 curl -s http://127.0.0.1:8642/health` (or equivalent) returns `{"status": "ok", ...}` — confirms the gateway API `hermes-webui`'s Tasks/System status depends on is actually up. ✓ verified
+- `ai.${DOMAIN_NAME}` redirects to `/login` with a 200, not a 502. ✓ verified
+- Not yet done end-to-end through a real browser: logging in with `HERMES_WEBUI_PASSWORD` and sending a chat that uses the browser tool through the UI itself, rather than `hermes -z`. Worth a manual pass.
