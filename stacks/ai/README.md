@@ -28,8 +28,13 @@ This is the one that actually mattered. `BU_CDP_URL` (a plain `http://host:port`
 - `OPENCODE_GO_API_KEY` — [OpenCode Go](https://opencode.ai/docs/go/), $10/mo subscription. Required; the container refuses to start without it. This is Hermes' own model key — the browser tool doesn't need or get one (Hermes strips credentials from that subprocess's env by design; the navigate/read/click actions used here don't need their own LLM call anyway).
 - `AI_MODEL` — optional, any model id from `https://opencode.ai/zen/go/v1/models` (e.g. `kimi-k2.7-code`, `deepseek-v4-pro`). Defaults to `glm-5.3`.
 
+## Two minor, harmless quirks noticed while verifying
+
+- `browser_harness` silently prepends a 🐴 emoji to tab titles as its own internal tab-marker convention (see its `daemon.py`/`run.py` comments) — the model sometimes reports it as part of the "real" page title, since from its view that's what the tool returned. Cosmetic only, not a bug in this stack.
+- The model occasionally double-checks a browsing result with a few extra tool calls (e.g. re-fetching to confirm a title) before answering — correct behavior, just slower wall-clock than a single round-trip. Give test prompts a couple minutes, not a couple of seconds.
+
 ## First-boot checklist
 
 - `podman compose logs -f hermes` starts cleanly and the container doesn't restart-loop. ✓ verified
-- `hermes -z "Use the browser tool to navigate to https://example.com and tell me the exact page title."` completes and gives a real, correct answer. ✓ verified repeatedly
+- `hermes -z "Use the browser tool to navigate to https://example.com and tell me the exact page title."` completes and gives a real, correct answer. ✓ verified repeatedly (4/4 test runs, including a fresh container from a clean deploy)
 - The dashboard on port 9119 has no auth of its own documented — same trust model as `stirling-pdf`/`jellyfin` (anyone reachable on the tailnet can use it). Check whether Hermes has grown an auth option worth turning on, given this agent can take real actions on the web.
