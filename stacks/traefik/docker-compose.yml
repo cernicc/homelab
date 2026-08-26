@@ -31,6 +31,11 @@ services:
       - --entryPoints.websecure.address=:443
       - --entryPoints.websecure.http.tls=true
       - --entryPoints.websecure.http.tls.certResolver=letsencrypt
+      # wildcard default cert -- covers any *.${DOMAIN_NAME} host, so
+      # nothing falls back to Traefik's self-signed default and triggers a
+      # browser warning
+      - --entryPoints.websecure.http.tls.domains[0].main=${DOMAIN_NAME}
+      - --entryPoints.websecure.http.tls.domains[0].sans=*.${DOMAIN_NAME}
 
       # let's encrypt via cloudflare DNS challenge
       - --certificatesresolvers.letsencrypt.acme.email=${CF_API_EMAIL}

@@ -94,7 +94,7 @@ Stacks are managed as systemd user services via the `docker-compose@.service` te
 - `media`
 - `observability`
 - `stirling-pdf` — see [stack README](stacks/stirling-pdf/README.md)
-- `traefik`
+- `traefik` — see [stack README](stacks/traefik/README.md)
 - `whoami`
 
 ### Enable a stack on boot
