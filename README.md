@@ -89,6 +89,7 @@ Point your domain's DNS records to the machine's IP. Services will be available 
 Stacks are managed as systemd user services via the `docker-compose@.service` template. Each stack maps to a directory under `stacks/` containing a `docker-compose.yml`.
 
 - `ai` — see [stack README](stacks/ai/README.md)
+- `invoice-builder` — see [stack README](stacks/invoice-builder/README.md)
 - `invoice-ninja` — see [stack README](stacks/invoice-ninja/README.md)
 - `media`
 - `observability`
