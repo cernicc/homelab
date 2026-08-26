@@ -56,6 +56,9 @@ storage:
                     "signedIdentity": {"type": "matchRepository"}
                   }
                 ]
+              },
+              "containers-storage": {
+                "": [{"type": "insecureAcceptAnything"}]
               }
             }
           }
