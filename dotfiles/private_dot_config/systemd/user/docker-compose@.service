@@ -1,6 +1,12 @@
 [Unit]
 Description=%i stack with podman compose
 Requires=podman.socket
+# Restart rate-limiting belongs here, not [Service] -- this systemd version
+# silently ignores it there ("Unknown key 'StartLimitIntervalSec'"), which
+# let a failing unit's Restart=on-failure retry forever instead of ever
+# landing in "failed".
+StartLimitIntervalSec=600
+StartLimitBurst=10
 
 [Service]
 Type=oneshot
@@ -16,8 +22,6 @@ TimeoutStartSec=300
 TimeoutStopSec=300
 Restart=on-failure
 RestartSec=30
-StartLimitBurst=10
-StartLimitIntervalSec=600
 WorkingDirectory=%h/homelab/stacks/%i
 
 [Install]
