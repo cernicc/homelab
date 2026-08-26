@@ -6,7 +6,7 @@ x-logging: &logging
 
 services:
   app:
-    image: invoiceninja/invoiceninja-debian:5.13.31
+    image: invoiceninja/invoiceninja-debian:5.13.35
     restart: unless-stopped
     environment:
       APP_ENV: ${APP_ENV}
@@ -31,7 +31,7 @@ services:
     logging: *logging
 
   nginx:
-    image: nginx:1.31.3-alpine
+    image: nginx:1.31.4-alpine
     restart: unless-stopped
     volumes:
       - ./nginx/in-vhost.conf:/etc/nginx/conf.d/in-vhost.conf:ro,Z
@@ -72,7 +72,7 @@ services:
     logging: *logging
 
   redis:
-    image: redis:8.10.0-alpine
+    image: redis:8.10.1-alpine
     restart: unless-stopped
     volumes:
       - redis_data:/data
