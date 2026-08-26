@@ -20,6 +20,17 @@ while IFS= read -r svc; do
     fi
 done < <(systemctl --user list-units --state=active --no-legend 'docker-compose@*.service' | awk '{print $1}')
 
-# Reload running stacks and start newly enabled ones
+# Reload running stacks
 systemctl --user reload docker-compose@*.service || true
-systemctl --user start docker-compose@*.service || true
+
+# Start newly enabled stacks. `systemctl start` with a glob only matches
+# units systemd has already loaded (i.e. started at least once), so a
+# never-before-started unit silently gets skipped by a glob -- and
+# `list-unit-files` only knows the docker-compose@.service template itself,
+# not its instances, so it can't enumerate them either. The instances that
+# are actually enabled are exactly the default.target.wants/ symlinks, so
+# read the names from there and start each by name instead.
+for svc in "$HOME/.config/systemd/user/default.target.wants/"docker-compose@*.service; do
+    [ -L "$svc" ] || continue
+    systemctl --user start "$(basename "$svc")"
+done
