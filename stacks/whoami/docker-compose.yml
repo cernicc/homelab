@@ -5,8 +5,38 @@ x-logging: &logging
     max-file: "3"
 
 services:
+  # Pilot for the Tailscale-sidecar ingress pattern (replacing Traefik) --
+  # see stacks/whoami/README.md. `whoami` shares this container's network
+  # namespace entirely (network_mode: service:whoami-ts), so it has no
+  # networking of its own below.
+  whoami-ts:
+    image: tailscale/tailscale:v1.102.4
+    container_name: whoami-ts
+    hostname: whoami
+    restart: unless-stopped
+    environment:
+      - TS_CLIENT_ID=${TS_OAUTH_CLIENT_ID}
+      - TS_CLIENT_SECRET=${TS_OAUTH_CLIENT_SECRET}
+      - TS_HOSTNAME=whoami
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_USERSPACE=false
+      - TS_SERVE_CONFIG=/config/serve.json
+      - TS_EXTRA_ARGS=--advertise-tags=tag:homelab-container
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    volumes:
+      - ./ts-config:/config:ro,Z
+      - whoami-ts-state:/var/lib/tailscale
+    logging: *logging
+
   whoami:
     image: traefik/whoami:v1.12.0
     container_name: whoami
     restart: unless-stopped
+    network_mode: service:whoami-ts
     logging: *logging
+
+volumes:
+  whoami-ts-state:
