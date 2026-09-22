@@ -105,13 +105,16 @@ Then commit and push — the machine will pick up the change automatically withi
 
 ### Disable a stack
 
-Remove the corresponding symlink file:
+Remove the corresponding symlink file, and add its target path to `dotfiles/.chezmoiremove` so chezmoi actually deletes the stale symlink from the machine instead of leaving it in place forever (chezmoi never deletes a destination file just because its source was removed, unless told to):
 
 ```bash
 rm dotfiles/private_dot_config/systemd/user/default.target.wants/symlink_docker-compose@<stack-name>.service
+echo '.config/systemd/user/default.target.wants/docker-compose@<stack-name>.service' >> dotfiles/.chezmoiremove
 ```
 
 Then commit and push — the machine will pick up the change automatically within 5 minutes.
+
+Note: don't use a glob in `.chezmoiremove` that matches still-enabled symlinks (e.g. `docker-compose@*.service`) — chezmoi treats a target matched by both an active source entry and a `.chezmoiremove` pattern as a conflict ("inconsistent state") and refuses to apply *anything*, not just skip that one entry. Keep entries here as exact, literal paths for stacks that no longer exist.
 
 ## Auto-sync
 
