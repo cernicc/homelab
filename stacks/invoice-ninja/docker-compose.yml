@@ -39,17 +39,8 @@ services:
       - app_storage:/var/www/html/storage:ro
     networks:
       - app
-      - proxy
     depends_on:
       - app
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.invoice-ninja.rule=Host(`invoices.${DOMAIN_NAME}`)
-      - traefik.http.routers.invoice-ninja.entrypoints=websecure
-      - traefik.http.routers.invoice-ninja.tls=true
-      - traefik.http.routers.invoice-ninja.tls.certresolver=letsencrypt
-      - traefik.http.services.invoice-ninja.loadbalancer.server.port=80
-      - traefik.docker.network=proxy
     logging: *logging
 
   mysql:
@@ -95,6 +86,3 @@ networks:
   app:
     driver: bridge
     internal: true
-  proxy:
-    name: proxy
-    external: true

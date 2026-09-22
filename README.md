@@ -30,7 +30,7 @@ The automatic chain after step 2, in order:
 4. **`homelab-firewall.service`** and **`homelab-bootstrap.service`** — these ship inside the custom image itself (not from ignition), so they simply don't exist until the machine is actually booted into it after reboot #2. The firewall service sets up the `tailscale` zone, opens 80/443, and moves `incusbr` to the `trusted` zone. The bootstrap service enables linger for `cernic` and runs `chezmoi init --apply` to pull down this repo's dotfiles — which is what installs `homelab-sync.timer`.
 5. **`homelab-sync.timer`** (every 5 minutes from here on) — pulls `main`, applies dotfiles via `chezmoi apply`, and reconciles which stacks are running. Stacks stay stopped until `.env` exists (step 5 below).
 
-Steps 3, 4, and 6 below (MOK enrollment, Tailscale, DNS) are manual and can happen any time after reboot #2 — they don't block or get blocked by the automatic chain.
+Steps 3 and 4 below (MOK enrollment, Tailscale) are manual and can happen any time after reboot #2 — they don't block or get blocked by the automatic chain.
 
 ### 1. Boot from Fedora CoreOS ISO
 
@@ -80,9 +80,7 @@ cp ~/homelab/.env.example ~/homelab/.env
 
 Then edit `~/homelab/.env` with your actual credentials. Stacks will start automatically within 5 minutes once the file exists.
 
-### 6. Configure DNS
-
-Point your domain's DNS records to the machine's IP. Services will be available at `<service>.yourdomain.com` as configured in Traefik.
+Note: no ingress is currently configured — Traefik was removed and nothing fronts these stacks yet, so services are only reachable from inside the container host itself until that's addressed.
 
 ## Stacks
 
@@ -93,7 +91,6 @@ Stacks are managed as systemd user services via the `docker-compose@.service` te
 - `media`
 - `observability`
 - `stirling-pdf` — see [stack README](stacks/stirling-pdf/README.md)
-- `traefik` — see [stack README](stacks/traefik/README.md)
 - `whoami`
 
 ### Enable a stack on boot

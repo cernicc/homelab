@@ -1,6 +1,6 @@
 # invoice-ninja
 
-`app` (invoiceninja-debian) + `nginx` + `mysql` + `redis`, fronted by Traefik at `invoices.${DOMAIN_NAME}`.
+`app` (invoiceninja-debian) + `nginx` + `mysql` + `redis`. No ingress configured currently (Traefik was removed; nothing fronts this yet).
 
 ## APP_ENV
 

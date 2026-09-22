@@ -22,16 +22,6 @@ services:
       - downloads:/data/downloads:ro
     networks:
       - media
-      - proxy
-    labels:
-      - traefik.enable=true
-      - traefik.docker.network=proxy
-      - traefik.http.routers.jellyfin.rule=Host(`jellyfin.${DOMAIN_NAME}`)
-      - traefik.http.routers.jellyfin.entrypoints=websecure
-      - traefik.http.routers.jellyfin.service=jellyfin
-      - traefik.http.routers.jellyfin.tls=true
-      - traefik.http.routers.jellyfin.tls.certresolver=letsencrypt
-      - traefik.http.services.jellyfin.loadbalancer.server.port=8096
     logging: *logging
 
   transmission:
@@ -49,16 +39,6 @@ services:
       - 51413:51413 # torrent peer port
     networks:
       - media
-      - proxy
-    labels:
-      - traefik.enable=true
-      - traefik.docker.network=proxy
-      - traefik.http.routers.transmission.rule=Host(`transmission.${DOMAIN_NAME}`)
-      - traefik.http.routers.transmission.entrypoints=websecure
-      - traefik.http.routers.transmission.service=transmission
-      - traefik.http.routers.transmission.tls=true
-      - traefik.http.routers.transmission.tls.certresolver=letsencrypt
-      - traefik.http.services.transmission.loadbalancer.server.port=9091
     logging: *logging
 
   prowlarr:
@@ -70,16 +50,6 @@ services:
       - prowlarr-config:/config
     networks:
       - media
-      - proxy
-    labels:
-      - traefik.enable=true
-      - traefik.docker.network=proxy
-      - traefik.http.routers.prowlarr.rule=Host(`prowlarr.${DOMAIN_NAME}`)
-      - traefik.http.routers.prowlarr.entrypoints=websecure
-      - traefik.http.routers.prowlarr.service=prowlarr
-      - traefik.http.routers.prowlarr.tls=true
-      - traefik.http.routers.prowlarr.tls.certresolver=letsencrypt
-      - traefik.http.services.prowlarr.loadbalancer.server.port=9696
     logging: *logging
 
   sonarr:
@@ -92,16 +62,6 @@ services:
       - downloads:/downloads
     networks:
       - media
-      - proxy
-    labels:
-      - traefik.enable=true
-      - traefik.docker.network=proxy
-      - traefik.http.routers.sonarr.rule=Host(`sonarr.${DOMAIN_NAME}`)
-      - traefik.http.routers.sonarr.entrypoints=websecure
-      - traefik.http.routers.sonarr.service=sonarr
-      - traefik.http.routers.sonarr.tls=true
-      - traefik.http.routers.sonarr.tls.certresolver=letsencrypt
-      - traefik.http.services.sonarr.loadbalancer.server.port=8989
     logging: *logging
 
   radarr:
@@ -114,16 +74,6 @@ services:
       - downloads:/downloads
     networks:
       - media
-      - proxy
-    labels:
-      - traefik.enable=true
-      - traefik.docker.network=proxy
-      - traefik.http.routers.radarr.rule=Host(`radarr.${DOMAIN_NAME}`)
-      - traefik.http.routers.radarr.entrypoints=websecure
-      - traefik.http.routers.radarr.service=radarr
-      - traefik.http.routers.radarr.tls=true
-      - traefik.http.routers.radarr.tls.certresolver=letsencrypt
-      - traefik.http.services.radarr.loadbalancer.server.port=7878
     logging: *logging
 
   seerr:
@@ -136,16 +86,6 @@ services:
       - seerr-config:/app/config
     networks:
       - media
-      - proxy
-    labels:
-      - traefik.enable=true
-      - traefik.docker.network=proxy
-      - traefik.http.routers.seerr.rule=Host(`seerr.${DOMAIN_NAME}`)
-      - traefik.http.routers.seerr.entrypoints=websecure
-      - traefik.http.routers.seerr.service=seerr
-      - traefik.http.routers.seerr.tls=true
-      - traefik.http.routers.seerr.tls.certresolver=letsencrypt
-      - traefik.http.services.seerr.loadbalancer.server.port=5055
     logging: *logging
 
   bazarr:
@@ -158,16 +98,6 @@ services:
       - downloads:/data/downloads
     networks:
       - media
-      - proxy
-    labels:
-      - traefik.enable=true
-      - traefik.docker.network=proxy
-      - traefik.http.routers.bazarr.rule=Host(`bazarr.${DOMAIN_NAME}`)
-      - traefik.http.routers.bazarr.entrypoints=websecure
-      - traefik.http.routers.bazarr.service=bazarr
-      - traefik.http.routers.bazarr.tls=true
-      - traefik.http.routers.bazarr.tls.certresolver=letsencrypt
-      - traefik.http.services.bazarr.loadbalancer.server.port=6767
     logging: *logging
 
 volumes:
@@ -183,6 +113,4 @@ volumes:
 
 networks:
   media:
-    internal: true
-  proxy:
-    external: true
+    driver: bridge
