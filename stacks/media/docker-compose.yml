@@ -11,22 +11,76 @@ x-media-env: &media-env
   PGID: 1000
   TZ: Europe/Ljubljana
 
+x-ts-sidecar: &ts-sidecar
+  image: tailscale/tailscale:v1.102.4
+  restart: unless-stopped
+  cap_add:
+    - NET_ADMIN
+  devices:
+    - /dev/net/tun:/dev/net/tun
+  logging: *logging
+
 services:
+  # Tailscale-sidecar ingress -- see stacks/whoami/README.md for the pattern.
+  # Each app container shares its sidecar's network namespace entirely
+  # (network_mode: service:<sidecar>), so it has no networking of its own
+  # below. Each sidecar also joins the `media` network under an alias equal
+  # to the app's own service name, so inter-service calls (e.g. Bazarr ->
+  # Sonarr, Seerr -> Radarr/Jellyfin) keep resolving the same hostnames they
+  # did before.
+  jellyfin-ts:
+    <<: *ts-sidecar
+    container_name: jellyfin-ts
+    hostname: jellyfin
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_HOSTNAME=jellyfin
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_USERSPACE=false
+      - TS_SERVE_CONFIG=/config/serve.json
+    volumes:
+      - ./ts-config/jellyfin:/config:ro,Z
+      - jellyfin-ts-state:/var/lib/tailscale
+    networks:
+      media:
+        aliases:
+          - jellyfin
+
   jellyfin:
     image: lscr.io/linuxserver/jellyfin:10.11.11
     restart: unless-stopped
+    network_mode: service:jellyfin-ts
     environment:
       <<: *media-env
     volumes:
       - jellyfin-config:/config
       - downloads:/data/downloads:ro
-    networks:
-      - media
     logging: *logging
+
+  transmission-ts:
+    <<: *ts-sidecar
+    container_name: transmission-ts
+    hostname: transmission
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_HOSTNAME=transmission
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_USERSPACE=false
+      - TS_SERVE_CONFIG=/config/serve.json
+    volumes:
+      - ./ts-config/transmission:/config:ro,Z
+      - transmission-ts-state:/var/lib/tailscale
+    ports:
+      - 51413:51413 # torrent peer port
+    networks:
+      media:
+        aliases:
+          - transmission
 
   transmission:
     image: lscr.io/linuxserver/transmission:4.1.3
     restart: unless-stopped
+    network_mode: service:transmission-ts
     environment:
       <<: *media-env
       USER: ${TRANSMISSION_USER}
@@ -35,69 +89,150 @@ services:
       - tx-config:/config
       - tx-watch:/watch
       - downloads:/downloads
-    ports:
-      - 51413:51413 # torrent peer port
-    networks:
-      - media
     logging: *logging
+
+  prowlarr-ts:
+    <<: *ts-sidecar
+    container_name: prowlarr-ts
+    hostname: prowlarr
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_HOSTNAME=prowlarr
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_USERSPACE=false
+      - TS_SERVE_CONFIG=/config/serve.json
+    volumes:
+      - ./ts-config/prowlarr:/config:ro,Z
+      - prowlarr-ts-state:/var/lib/tailscale
+    networks:
+      media:
+        aliases:
+          - prowlarr
 
   prowlarr:
     image: lscr.io/linuxserver/prowlarr:2.5.2
     restart: unless-stopped
+    network_mode: service:prowlarr-ts
     environment:
       <<: *media-env
     volumes:
       - prowlarr-config:/config
-    networks:
-      - media
     logging: *logging
+
+  sonarr-ts:
+    <<: *ts-sidecar
+    container_name: sonarr-ts
+    hostname: sonarr
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_HOSTNAME=sonarr
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_USERSPACE=false
+      - TS_SERVE_CONFIG=/config/serve.json
+    volumes:
+      - ./ts-config/sonarr:/config:ro,Z
+      - sonarr-ts-state:/var/lib/tailscale
+    networks:
+      media:
+        aliases:
+          - sonarr
 
   sonarr:
     image: lscr.io/linuxserver/sonarr:4.0.19
     restart: unless-stopped
+    network_mode: service:sonarr-ts
     environment:
       <<: *media-env
     volumes:
       - sonarr-config:/config
       - downloads:/downloads
-    networks:
-      - media
     logging: *logging
+
+  radarr-ts:
+    <<: *ts-sidecar
+    container_name: radarr-ts
+    hostname: radarr
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_HOSTNAME=radarr
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_USERSPACE=false
+      - TS_SERVE_CONFIG=/config/serve.json
+    volumes:
+      - ./ts-config/radarr:/config:ro,Z
+      - radarr-ts-state:/var/lib/tailscale
+    networks:
+      media:
+        aliases:
+          - radarr
 
   radarr:
     image: lscr.io/linuxserver/radarr:6.3.0
     restart: unless-stopped
+    network_mode: service:radarr-ts
     environment:
       <<: *media-env
     volumes:
       - radarr-config:/config
       - downloads:/downloads
-    networks:
-      - media
     logging: *logging
+
+  seerr-ts:
+    <<: *ts-sidecar
+    container_name: seerr-ts
+    hostname: seerr
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_HOSTNAME=seerr
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_USERSPACE=false
+      - TS_SERVE_CONFIG=/config/serve.json
+    volumes:
+      - ./ts-config/seerr:/config:ro,Z
+      - seerr-ts-state:/var/lib/tailscale
+    networks:
+      media:
+        aliases:
+          - seerr
 
   seerr:
     image: ghcr.io/seerr-team/seerr:v3.1.0
     init: true
     restart: unless-stopped
+    network_mode: service:seerr-ts
     environment:
       TZ: Europe/Ljubljana
     volumes:
       - seerr-config:/app/config
-    networks:
-      - media
     logging: *logging
+
+  bazarr-ts:
+    <<: *ts-sidecar
+    container_name: bazarr-ts
+    hostname: bazarr
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_HOSTNAME=bazarr
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_USERSPACE=false
+      - TS_SERVE_CONFIG=/config/serve.json
+    volumes:
+      - ./ts-config/bazarr:/config:ro,Z
+      - bazarr-ts-state:/var/lib/tailscale
+    networks:
+      media:
+        aliases:
+          - bazarr
 
   bazarr:
     image: lscr.io/linuxserver/bazarr:1.6.0
     restart: unless-stopped
+    network_mode: service:bazarr-ts
     environment:
       <<: *media-env
     volumes:
       - bazarr-config:/config
       - downloads:/data/downloads
-    networks:
-      - media
     logging: *logging
 
 volumes:
@@ -110,6 +245,13 @@ volumes:
   jellyfin-config:
   seerr-config:
   bazarr-config:
+  jellyfin-ts-state:
+  transmission-ts-state:
+  prowlarr-ts-state:
+  sonarr-ts-state:
+  radarr-ts-state:
+  seerr-ts-state:
+  bazarr-ts-state:
 
 networks:
   media:
