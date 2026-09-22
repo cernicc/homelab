@@ -6,7 +6,7 @@ x-logging: &logging
 
 services:
   grafana:
-    image: grafana/grafana:13.2.0
+    image: grafana/grafana:13.2.2
     restart: unless-stopped
     environment:
       - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
@@ -21,7 +21,7 @@ services:
     logging: *logging
 
   loki:
-    image: grafana/loki:3.7.6
+    image: grafana/loki:3.7.8
     restart: unless-stopped
     command: -config.file=/etc/loki/config.yaml
     volumes:
@@ -32,7 +32,7 @@ services:
     logging: *logging
 
   alloy:
-    image: grafana/alloy:v1.19.1
+    image: grafana/alloy:v1.19.2
     restart: unless-stopped
     command: run --server.http.listen-addr=0.0.0.0:12345 /etc/alloy/config.alloy
     volumes:
