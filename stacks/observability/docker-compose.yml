@@ -18,15 +18,6 @@ services:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro,Z
     networks:
       - observability
-      - proxy
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.grafana.rule=Host(`grafana.${DOMAIN_NAME}`)
-      - traefik.http.routers.grafana.entrypoints=websecure
-      - traefik.http.routers.grafana.tls=true
-      - traefik.http.routers.grafana.tls.certresolver=letsencrypt
-      - traefik.http.services.grafana.loadbalancer.server.port=3000
-      - traefik.docker.network=proxy
     logging: *logging
 
   loki:
@@ -58,7 +49,3 @@ volumes:
 networks:
   observability:
     driver: bridge
-    internal: true
-  proxy:
-    name: proxy
-    external: true

@@ -1,6 +1,6 @@
 # ai
 
-[Hermes Agent](https://hermes-agent.nousresearch.com/) — self-improving AI agent from Nous Research — using its [native browser tool](https://hermes-agent.nousresearch.com/docs/user-guide/features/browser) (driven by [browser-use](https://github.com/browser-use/browser-use)) for web browsing/automation, with [nesquena/hermes-webui](https://github.com/nesquena/hermes-webui) (a third-party web UI, reading the agent's state directly rather than being a separate agent of its own) as the front end fronted by Traefik at `ai.${DOMAIN_NAME}`. Single container/single service — see the `hermes-webui` section below for why.
+[Hermes Agent](https://hermes-agent.nousresearch.com/) — self-improving AI agent from Nous Research — using its [native browser tool](https://hermes-agent.nousresearch.com/docs/user-guide/features/browser) (driven by [browser-use](https://github.com/browser-use/browser-use)) for web browsing/automation, with [nesquena/hermes-webui](https://github.com/nesquena/hermes-webui) (a third-party web UI, reading the agent's state directly rather than being a separate agent of its own) as the front end. No ingress configured currently (Traefik was removed; nothing fronts this yet). Single container/single service — see the `hermes-webui` section below for why.
 
 ## Architecture: Hermes' native browser tool, pointed at a self-launched Chromium
 
@@ -58,7 +58,7 @@ None of this stops a *real* redeploy (an actual code change) from recreating the
 - `OPENCODE_GO_API_KEY` — [OpenCode Go](https://opencode.ai/docs/go/), $10/mo subscription. Required; the container refuses to start without it. This is Hermes' own model key — the browser tool doesn't need or get one (Hermes strips credentials from that subprocess's env by design; the navigate/read/click actions used here don't need their own LLM call anyway).
 - `AI_MODEL` — optional, any model id from `https://opencode.ai/zen/go/v1/models` (e.g. `kimi-k2.7-code`, `deepseek-v4-pro`). Defaults to `glm-5.3`.
 - `API_SERVER_KEY` — required; any string 16+ characters. Enables the gateway API listener and authenticates `hermes-webui` against it (both live in this same container) — not meant to be memorized/typed, just needs a value.
-- `HERMES_WEBUI_PASSWORD` — required; login at `ai.${DOMAIN_NAME}` (same pattern as `TRANSMISSION_USER`/`TRANSMISSION_PASS` in the `media` stack, minus the username — password-only, no username field).
+- `HERMES_WEBUI_PASSWORD` — required; login to `hermes-webui` once something fronts this stack again (same pattern as `TRANSMISSION_USER`/`TRANSMISSION_PASS` in the `media` stack, minus the username — password-only, no username field).
 
 ## Two minor, harmless quirks noticed while verifying
 
@@ -71,5 +71,5 @@ None of this stops a *real* redeploy (an actual code change) from recreating the
 - `hermes -z "Use the browser tool to navigate to https://example.com and tell me the exact page title."` completes and gives a real, correct answer. ✓ verified repeatedly (4/4 test runs, including a fresh container from a clean deploy)
 - `podman exec ai-hermes-1 cat /tmp/hermes-webui.log` shows `agent dir: /opt/hermes [ok]`, `config file: /opt/data/config.yaml (found)`, and `Hermes Web UI listening on http://0.0.0.0:8787`. ✓ verified
 - `podman exec ai-hermes-1 curl -s http://127.0.0.1:8642/health` (or equivalent) returns `{"status": "ok", ...}` — confirms the gateway API `hermes-webui`'s Tasks/System status depends on is actually up. ✓ verified
-- `ai.${DOMAIN_NAME}` redirects to `/login` with a 200, not a 502. ✓ verified
+- `ai.${DOMAIN_NAME}` redirected to `/login` with a 200, not a 502. ✓ verified (when Traefik still fronted this stack; no ingress today)
 - Not yet done end-to-end through a real browser: logging in with `HERMES_WEBUI_PASSWORD` and sending a chat that uses the browser tool through the UI itself, rather than `hermes -z`. Worth a manual pass.
