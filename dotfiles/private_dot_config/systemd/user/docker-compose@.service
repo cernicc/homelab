@@ -18,7 +18,7 @@ Environment=PODMAN_SYSTEMD_UNIT=%n
 Environment=PODMAN_USERNS=keep-id
 Environment=DOCKER_HOST=unix://%t/podman/podman.sock
 Environment=PODMAN_COMPOSE_WARNING_LOGS=false
-TimeoutStartSec=300
+TimeoutStartSec=0
 TimeoutStopSec=300
 Restart=on-failure
 RestartSec=30
