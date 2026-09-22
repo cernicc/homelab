@@ -5,9 +5,34 @@ x-logging: &logging
     max-file: "3"
 
 services:
+  # Tailscale-sidecar ingress -- see stacks/whoami/README.md for the pattern
+  # this was piloted with. `stirling-pdf` shares this container's network
+  # namespace entirely (network_mode: service:stirling-pdf-ts), so it has no
+  # networking of its own below.
+  stirling-pdf-ts:
+    image: tailscale/tailscale:v1.102.4
+    container_name: stirling-pdf-ts
+    hostname: stirling-pdf
+    restart: unless-stopped
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_HOSTNAME=stirling-pdf
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_USERSPACE=false
+      - TS_SERVE_CONFIG=/config/serve.json
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    volumes:
+      - ./ts-config:/config:ro,Z
+      - stirling-pdf-ts-state:/var/lib/tailscale
+    logging: *logging
+
   stirling-pdf:
     image: stirlingtools/stirling-pdf:2.14.3-fat
     restart: unless-stopped
+    network_mode: service:stirling-pdf-ts
     environment:
       SECURITY_ENABLELOGIN: "false"
       SYSTEM_DEFAULTLOCALE: en-US
@@ -23,3 +48,4 @@ volumes:
   tessdata:
   config:
   logs:
+  stirling-pdf-ts-state:
