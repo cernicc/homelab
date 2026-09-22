@@ -11,7 +11,7 @@ This stack is the **pilot** for that pattern -- disposable, no real function, ch
 ## One-time setup (not tracked in git)
 
 1. Tailscale admin console -> Settings -> OAuth clients -> new client, scope `Devices: Write`, restricted to a tag it owns.
-2. ACL policy -> add `"tagOwners": {"tag:homelab-container": ["autogroup:admin"]}` (or whichever owner makes sense) so the client can tag nodes with it.
+2. ACL policy -> add `"tagOwners": {"tag:homelab": ["autogroup:admin"]}` (or whichever owner makes sense) so the client can tag nodes with it.
 3. DNS -> HTTPS Certificates -> enabled (required for `tailscale serve` to auto-issue `*.ts.net` certs).
 4. Set `TS_OAUTH_CLIENT_ID` / `TS_OAUTH_CLIENT_SECRET` in `~/homelab/.env` on `alfred`.
 
