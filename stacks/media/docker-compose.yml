@@ -47,7 +47,7 @@ services:
           - jellyfin
 
   jellyfin:
-    image: lscr.io/linuxserver/jellyfin:10.11.11
+    image: lscr.io/linuxserver/jellyfin:12.1ubu2604-ls50
     restart: unless-stopped
     network_mode: service:jellyfin-ts
     environment:
@@ -110,7 +110,7 @@ services:
           - prowlarr
 
   prowlarr:
-    image: lscr.io/linuxserver/prowlarr:2.5.2
+    image: lscr.io/linuxserver/prowlarr:2.6.5
     restart: unless-stopped
     network_mode: service:prowlarr-ts
     environment:
@@ -138,7 +138,7 @@ services:
           - sonarr
 
   sonarr:
-    image: lscr.io/linuxserver/sonarr:4.0.19
+    image: lscr.io/linuxserver/sonarr:4.0.20
     restart: unless-stopped
     network_mode: service:sonarr-ts
     environment:
@@ -167,7 +167,7 @@ services:
           - radarr
 
   radarr:
-    image: lscr.io/linuxserver/radarr:6.3.0
+    image: lscr.io/linuxserver/radarr:6.4.4
     restart: unless-stopped
     network_mode: service:radarr-ts
     environment:
@@ -196,7 +196,7 @@ services:
           - seerr
 
   seerr:
-    image: ghcr.io/seerr-team/seerr:v3.1.0
+    image: ghcr.io/seerr-team/seerr:v3.4.1
     init: true
     restart: unless-stopped
     network_mode: service:seerr-ts
@@ -225,7 +225,7 @@ services:
           - bazarr
 
   bazarr:
-    image: lscr.io/linuxserver/bazarr:1.6.0
+    image: lscr.io/linuxserver/bazarr:1.6.1
     restart: unless-stopped
     network_mode: service:bazarr-ts
     environment:
