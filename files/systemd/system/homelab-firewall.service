@@ -5,8 +5,8 @@ Wants=network-online.target tailscaled.service incus.service
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-StandardOutput=journal+console
-StandardError=journal+console
+StandardOutput=journal
+StandardError=journal
 ExecStart=-/usr/bin/firewall-cmd --new-zone=tailscale --permanent
 ExecStart=-/usr/bin/firewall-cmd --zone=tailscale --add-interface=tailscale0 --permanent
 ExecStart=-/usr/bin/firewall-cmd --zone=tailscale --add-port=80/tcp --permanent
