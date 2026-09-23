@@ -63,37 +63,40 @@ services:
       - downloads:/data/downloads:ro
     logging: *logging
 
-  transmission-ts:
+  qbittorrent-ts:
     <<: *ts-sidecar
-    container_name: transmission-ts
-    hostname: transmission
+    container_name: qbittorrent-ts
+    hostname: qbittorrent
     environment:
       - TS_AUTHKEY=${TS_AUTHKEY}
-      - TS_HOSTNAME=transmission
+      - TS_HOSTNAME=qbittorrent
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_USERSPACE=false
       - TS_SERVE_CONFIG=/config/serve.json
     volumes:
-      - ./ts-config/transmission:/config:ro,Z
-      - transmission-ts-state:/var/lib/tailscale
+      - ./ts-config/qbittorrent:/config:ro,Z
+      - qbittorrent-ts-state:/var/lib/tailscale
     ports:
       - 51413:51413 # torrent peer port
+      - 51413:51413/udp
     networks:
       media:
         aliases:
-          - transmission
+          - qbittorrent
 
-  transmission:
-    image: lscr.io/linuxserver/transmission:4.1.3
+  # No credentials via env: on first start the image logs a temporary admin
+  # password (`podman logs media-qbittorrent-1`); set a permanent one in the
+  # web UI.
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:5.2.3
     restart: unless-stopped
-    network_mode: service:transmission-ts
+    network_mode: service:qbittorrent-ts
     environment:
       <<: *media-env
-      USER: ${TRANSMISSION_USER}
-      PASS: ${TRANSMISSION_PASS}
+      WEBUI_PORT: 8080
+      TORRENTING_PORT: 51413
     volumes:
-      - tx-config:/config
-      - tx-watch:/watch
+      - qbittorrent-config:/config
       - downloads:/downloads
     logging: *logging
 
@@ -243,8 +246,7 @@ services:
 
 volumes:
   downloads:
-  tx-config:
-  tx-watch:
+  qbittorrent-config:
   sonarr-config:
   radarr-config:
   prowlarr-config:
@@ -252,7 +254,7 @@ volumes:
   seerr-config:
   bazarr-config:
   jellyfin-ts-state:
-  transmission-ts-state:
+  qbittorrent-ts-state:
   prowlarr-ts-state:
   sonarr-ts-state:
   radarr-ts-state:
