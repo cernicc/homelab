@@ -154,6 +154,21 @@ services:
       - prowlarr-config:/config
     logging: *logging
 
+  # Cloudflare challenge solver for Prowlarr indexers. No UI and nothing
+  # else talks to it, so no Tailscale sidecar: it only sits on the `media`
+  # network. In Prowlarr add it under Settings -> Indexers as a FlareSolverr
+  # proxy with host http://flaresolverr:8191/ and a tag, then put that tag
+  # on the indexers that need it.
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:v3.5.2
+    restart: unless-stopped
+    environment:
+      TZ: Europe/Ljubljana
+      LOG_LEVEL: info
+    networks:
+      - media
+    logging: *logging
+
   sonarr-ts:
     <<: *ts-sidecar
     hostname: sonarr
