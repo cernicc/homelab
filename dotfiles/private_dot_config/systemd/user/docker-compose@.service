@@ -11,8 +11,8 @@ StartLimitBurst=10
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/usr/bin/podman compose --env-file %h/homelab/.env up -d --remove-orphans --build
-ExecReload=/usr/bin/podman compose --env-file %h/homelab/.env up -d --remove-orphans --build
+ExecStart=%h/.local/bin/homelab-compose-up
+ExecReload=%h/.local/bin/homelab-compose-up
 ExecStop=/usr/bin/podman compose stop
 Environment=PODMAN_SYSTEMD_UNIT=%n
 Environment=PODMAN_USERNS=keep-id
