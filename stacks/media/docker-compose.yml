@@ -21,6 +21,27 @@ x-ts-sidecar: &ts-sidecar
   logging: *logging
 
 services:
+  # Shared media tree, laid out per TRaSH Guides
+  # (https://trash-guides.info/File-and-Folder-Structure/How-to-set-up/Docker/):
+  #
+  #   /data/torrents/{movies,tv}  qBittorrent downloads (category save paths)
+  #   /data/media/{movies,tv}     Sonarr/Radarr library root folders
+  #
+  # Downloads and library live on one volume, mounted at the same /data path
+  # in every container, so imports are hardlinks/atomic moves and no remote
+  # path mappings are needed. Runs as root only to create the tree and chown
+  # it to PUID/PGID, then exits; the app containers wait for it.
+  data-init:
+    image: busybox:1.37.0
+    restart: "no"
+    command: >-
+      sh -c "mkdir -p /data/torrents/movies /data/torrents/tv
+      /data/media/movies /data/media/tv
+      && chown -R 1000:1000 /data"
+    volumes:
+      - data:/data
+    logging: *logging
+
   # Tailscale-sidecar ingress -- see stacks/whoami/README.md for the pattern.
   # Each app container shares its sidecar's network namespace entirely
   # (network_mode: service:<sidecar>), so it has no networking of its own
@@ -58,9 +79,12 @@ services:
     # this CDI-qualified device name is the form that actually works.
     devices:
       - nvidia.com/gpu=all
+    depends_on:
+      data-init:
+        condition: service_completed_successfully
     volumes:
       - jellyfin-config:/config
-      - downloads:/data/downloads:ro
+      - data:/data:ro
     logging: *logging
 
   qbittorrent-ts:
@@ -86,7 +110,9 @@ services:
 
   # No credentials via env: on first start the image logs a temporary admin
   # password (`podman logs media-qbittorrent-1`); set a permanent one in the
-  # web UI.
+  # web UI. Also set there: default save path /data/torrents, and categories
+  # `movies` -> /data/torrents/movies, `tv` -> /data/torrents/tv (matching the
+  # categories in Radarr/Sonarr's download client settings).
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:5.2.3
     restart: unless-stopped
@@ -95,9 +121,12 @@ services:
       <<: *media-env
       WEBUI_PORT: 8080
       TORRENTING_PORT: 51413
+    depends_on:
+      data-init:
+        condition: service_completed_successfully
     volumes:
       - qbittorrent-config:/config
-      - downloads:/downloads
+      - data:/data
     logging: *logging
 
   prowlarr-ts:
@@ -152,9 +181,12 @@ services:
     network_mode: service:sonarr-ts
     environment:
       <<: *media-env
+    depends_on:
+      data-init:
+        condition: service_completed_successfully
     volumes:
       - sonarr-config:/config
-      - downloads:/downloads
+      - data:/data
     logging: *logging
 
   radarr-ts:
@@ -181,9 +213,12 @@ services:
     network_mode: service:radarr-ts
     environment:
       <<: *media-env
+    depends_on:
+      data-init:
+        condition: service_completed_successfully
     volumes:
       - radarr-config:/config
-      - downloads:/downloads
+      - data:/data
     logging: *logging
 
   seerr-ts:
@@ -239,13 +274,16 @@ services:
     network_mode: service:bazarr-ts
     environment:
       <<: *media-env
+    depends_on:
+      data-init:
+        condition: service_completed_successfully
     volumes:
       - bazarr-config:/config
-      - downloads:/data/downloads
+      - data:/data
     logging: *logging
 
 volumes:
-  downloads:
+  data:
   qbittorrent-config:
   sonarr-config:
   radarr-config:
