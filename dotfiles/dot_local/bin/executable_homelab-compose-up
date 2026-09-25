@@ -1,0 +1,20 @@
+#!/bin/bash
+# Bring up the compose stack in the current directory (used by
+# docker-compose@.service for both start and reload).
+set -uo pipefail
+
+compose() {
+    /usr/bin/podman compose --env-file "$HOME/homelab/.env" "$@"
+}
+
+compose up -d --remove-orphans --build && exit 0
+
+# Podman refuses to remove a container that others share a namespace with
+# (network_mode: service:<sidecar>), even when those are stopped, so any
+# change that makes compose recreate a Tailscale sidecar fails mid-way and
+# leaves the stack half torn down. Recreate the whole stack instead; `down`
+# removes dependents before the containers they depend on. Named volumes
+# are kept.
+echo "compose up failed; recreating the stack from scratch" >&2
+compose down --remove-orphans
+compose up -d --remove-orphans --build
