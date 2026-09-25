@@ -51,7 +51,6 @@ services:
   # did before.
   jellyfin-ts:
     <<: *ts-sidecar
-    container_name: jellyfin-ts
     hostname: jellyfin
     environment:
       - TS_AUTHKEY=${TS_AUTHKEY}
@@ -89,7 +88,6 @@ services:
 
   qbittorrent-ts:
     <<: *ts-sidecar
-    container_name: qbittorrent-ts
     hostname: qbittorrent
     environment:
       - TS_AUTHKEY=${TS_AUTHKEY}
@@ -131,7 +129,6 @@ services:
 
   prowlarr-ts:
     <<: *ts-sidecar
-    container_name: prowlarr-ts
     hostname: prowlarr
     environment:
       - TS_AUTHKEY=${TS_AUTHKEY}
@@ -159,7 +156,6 @@ services:
 
   sonarr-ts:
     <<: *ts-sidecar
-    container_name: sonarr-ts
     hostname: sonarr
     environment:
       - TS_AUTHKEY=${TS_AUTHKEY}
@@ -191,7 +187,6 @@ services:
 
   radarr-ts:
     <<: *ts-sidecar
-    container_name: radarr-ts
     hostname: radarr
     environment:
       - TS_AUTHKEY=${TS_AUTHKEY}
@@ -223,7 +218,6 @@ services:
 
   seerr-ts:
     <<: *ts-sidecar
-    container_name: seerr-ts
     hostname: seerr
     environment:
       - TS_AUTHKEY=${TS_AUTHKEY}
@@ -252,7 +246,6 @@ services:
 
   bazarr-ts:
     <<: *ts-sidecar
-    container_name: bazarr-ts
     hostname: bazarr
     environment:
       - TS_AUTHKEY=${TS_AUTHKEY}
