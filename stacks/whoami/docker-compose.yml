@@ -11,7 +11,6 @@ services:
   # networking of its own below.
   whoami-ts:
     image: tailscale/tailscale:v1.102.4
-    container_name: whoami-ts
     hostname: whoami
     restart: unless-stopped
     environment:
@@ -31,7 +30,6 @@ services:
 
   whoami:
     image: traefik/whoami:v1.12.0
-    container_name: whoami
     restart: unless-stopped
     network_mode: service:whoami-ts
     logging: *logging

@@ -11,7 +11,6 @@ services:
   # networking of its own below.
   stirling-pdf-ts:
     image: tailscale/tailscale:v1.102.4
-    container_name: stirling-pdf-ts
     hostname: stirling-pdf
     restart: unless-stopped
     environment:

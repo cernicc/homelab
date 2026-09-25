@@ -21,7 +21,7 @@ Note: an OAuth client (`TS_CLIENT_ID`/`TS_CLIENT_SECRET`) was tried first and co
 
 Over SSH on `alfred`:
 
-- `podman logs whoami-ts` -- sidecar registers as a tailnet node, no restart loop
-- `podman exec whoami-ts tailscale status` -- shows itself Active
+- `podman logs whoami-whoami-ts-1` -- sidecar registers as a tailnet node, no restart loop
+- `podman exec whoami-whoami-ts-1 tailscale status` -- shows itself Active
 - `journalctl -b | grep -i avc` -- no SELinux denials
 - `https://whoami.<tailnet-name>.ts.net` -- loads with a valid cert and whoami's response
