@@ -7,6 +7,13 @@ compose() {
     /usr/bin/podman compose --env-file "$HOME/homelab/.env" "$@"
 }
 
+# Fail before touching any container if the file is invalid or an image
+# can't be pulled, so a bad push or a registry outage leaves the running
+# stack alone. `--policy missing` only hits the registry for tags not
+# already present, which with pinned tags means only after a bump.
+compose config --quiet || exit 1
+compose pull --quiet --policy missing --ignore-buildable || exit 1
+
 compose up -d --remove-orphans --build && exit 0
 
 # Podman refuses to remove a container that others share a namespace with
