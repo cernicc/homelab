@@ -24,8 +24,8 @@ services:
   # Shared media tree, laid out per TRaSH Guides
   # (https://trash-guides.info/File-and-Folder-Structure/How-to-set-up/Docker/):
   #
-  #   /data/torrents/{movies,tv}  qBittorrent downloads (category save paths)
-  #   /data/media/{movies,tv}     Sonarr/Radarr library root folders
+  #   /data/torrents/{movies,tv,books}  qBittorrent downloads (category save paths)
+  #   /data/media/{movies,tv,books}     Sonarr/Radarr/Shelfmark library roots
   #
   # Downloads and library live on one volume, mounted at the same /data path
   # in every container, so imports are hardlinks/atomic moves and no remote
@@ -35,8 +35,8 @@ services:
     image: busybox:1.37.0
     restart: "no"
     command: >-
-      sh -c "mkdir -p /data/torrents/movies /data/torrents/tv
-      /data/media/movies /data/media/tv
+      sh -c "mkdir -p /data/torrents/movies /data/torrents/tv /data/torrents/books
+      /data/media/movies /data/media/tv /data/media/books
       && chown -R 1000:1000 /data"
     volumes:
       - data:/data
@@ -154,11 +154,12 @@ services:
       - prowlarr-config:/config
     logging: *logging
 
-  # Cloudflare challenge solver for Prowlarr indexers. No UI and nothing
-  # else talks to it, so no Tailscale sidecar: it only sits on the `media`
-  # network. In Prowlarr add it under Settings -> Indexers as a FlareSolverr
-  # proxy with host http://flaresolverr:8191/ and a tag, then put that tag
-  # on the indexers that need it.
+  # Cloudflare challenge solver for Prowlarr indexers and Shelfmark's direct
+  # downloads. No UI, only called by other services, so no Tailscale
+  # sidecar: it only sits on the `media` network. In Prowlarr add it under
+  # Settings -> Indexers as a FlareSolverr proxy with host
+  # http://flaresolverr:8191/ and a tag, then put that tag on the indexers
+  # that need it.
   flaresolverr:
     image: ghcr.io/flaresolverr/flaresolverr:v3.5.2
     restart: unless-stopped
@@ -290,6 +291,124 @@ services:
       - data:/data
     logging: *logging
 
+  shelfmark-ts:
+    <<: *ts-sidecar
+    hostname: shelfmark
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_HOSTNAME=shelfmark
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_USERSPACE=false
+      - TS_SERVE_CONFIG=/config/serve.json
+    volumes:
+      - ./ts-config/shelfmark:/config:ro,Z
+      - shelfmark-ts-state:/var/lib/tailscale
+    networks:
+      media:
+        aliases:
+          - shelfmark
+
+  # Book search/request UI. Lite image (no bundled Chromium): Cloudflare
+  # challenges go to the flaresolverr service instead. Finished books land in
+  # /data/media/books, which Grimmory scans as its library. Needs the whole
+  # /data tree so it sees torrents at the same path qBittorrent reports.
+  # In the web UI set: Prowlarr at http://prowlarr:9696 (+ API key), torrent
+  # client qBittorrent at http://qbittorrent:8080 with category `books`
+  # (-> /data/torrents/books in qBittorrent). Keep the transfer method on
+  # Copy, not Hardlink: Grimmory writes metadata into library files, which
+  # would corrupt the torrent still seeding a hardlinked copy.
+  shelfmark:
+    image: ghcr.io/calibrain/shelfmark-lite:v1.4.0
+    restart: unless-stopped
+    network_mode: service:shelfmark-ts
+    environment:
+      <<: *media-env
+      INGEST_DIR: /data/media/books
+      USING_EXTERNAL_BYPASSER: "true"
+      EXT_BYPASSER_URL: http://flaresolverr:8191
+    depends_on:
+      data-init:
+        condition: service_completed_successfully
+    volumes:
+      - shelfmark-config:/config
+      - data:/data
+    logging: *logging
+
+  # Also joins the internal `grimmory-db` network, so Grimmory (sharing this
+  # namespace) is the only service that can reach its database.
+  grimmory-ts:
+    <<: *ts-sidecar
+    hostname: grimmory
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_HOSTNAME=grimmory
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_USERSPACE=false
+      - TS_SERVE_CONFIG=/config/serve.json
+    volumes:
+      - ./ts-config/grimmory:/config:ro,Z
+      - grimmory-ts-state:/var/lib/tailscale
+    networks:
+      media:
+        aliases:
+          - grimmory
+      grimmory-db:
+
+  # Add /data/media/books as a library in the web UI; Shelfmark downloads
+  # land there. Mounted read-write so Grimmory can write metadata back into
+  # the files. Bookdrop is unused (no volume), since books only arrive via
+  # Shelfmark.
+  grimmory:
+    image: ghcr.io/grimmory-tools/grimmory:v3.5.0
+    restart: unless-stopped
+    network_mode: service:grimmory-ts
+    environment:
+      USER_ID: 1000
+      GROUP_ID: 1000
+      TZ: Europe/Ljubljana
+      DATABASE_URL: jdbc:mariadb://grimmory-db:3306/grimmory
+      DATABASE_USERNAME: grimmory
+      DATABASE_PASSWORD: ${GRIMMORY_DB_PASSWORD}
+      API_DOCS_ENABLED: "false"
+      DISK_TYPE: LOCAL
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:6060/api/v1/healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    depends_on:
+      data-init:
+        condition: service_completed_successfully
+      grimmory-db:
+        condition: service_healthy
+    volumes:
+      - grimmory-data:/app/data
+      - data:/data
+    logging: *logging
+
+  # Only on the internal `grimmory-db` network: unreachable from the `media`
+  # network, and no route to the internet.
+  grimmory-db:
+    image: lscr.io/linuxserver/mariadb:11.8.8-r0-ls232
+    restart: unless-stopped
+    environment:
+      <<: *media-env
+      MYSQL_ROOT_PASSWORD: ${GRIMMORY_DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: grimmory
+      MYSQL_USER: grimmory
+      MYSQL_PASSWORD: ${GRIMMORY_DB_PASSWORD}
+    volumes:
+      - grimmory-db-config:/config
+    networks:
+      - grimmory-db
+    healthcheck:
+      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    logging: *logging
+
 volumes:
   data:
   qbittorrent-config:
@@ -299,6 +418,9 @@ volumes:
   jellyfin-config:
   seerr-config:
   bazarr-config:
+  shelfmark-config:
+  grimmory-data:
+  grimmory-db-config:
   jellyfin-ts-state:
   qbittorrent-ts-state:
   prowlarr-ts-state:
@@ -306,7 +428,12 @@ volumes:
   radarr-ts-state:
   seerr-ts-state:
   bazarr-ts-state:
+  shelfmark-ts-state:
+  grimmory-ts-state:
 
 networks:
   media:
     driver: bridge
+  grimmory-db:
+    driver: bridge
+    internal: true
