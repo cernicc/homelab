@@ -14,7 +14,7 @@ services:
     hostname: whoami
     restart: unless-stopped
     environment:
-      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_AUTHKEY=${TS_AUTHKEY:?set in ~/homelab/.env}
       - TS_HOSTNAME=whoami
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_USERSPACE=false
