@@ -14,7 +14,7 @@ services:
     hostname: stirling-pdf
     restart: unless-stopped
     environment:
-      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_AUTHKEY=${TS_AUTHKEY:?set in ~/homelab/.env}
       - TS_HOSTNAME=stirling-pdf
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_USERSPACE=false

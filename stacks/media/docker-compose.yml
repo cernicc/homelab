@@ -53,7 +53,7 @@ services:
     <<: *ts-sidecar
     hostname: jellyfin
     environment:
-      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_AUTHKEY=${TS_AUTHKEY:?set in ~/homelab/.env}
       - TS_HOSTNAME=jellyfin
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_USERSPACE=false
@@ -90,7 +90,7 @@ services:
     <<: *ts-sidecar
     hostname: qbittorrent
     environment:
-      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_AUTHKEY=${TS_AUTHKEY:?set in ~/homelab/.env}
       - TS_HOSTNAME=qbittorrent
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_USERSPACE=false
@@ -131,7 +131,7 @@ services:
     <<: *ts-sidecar
     hostname: prowlarr
     environment:
-      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_AUTHKEY=${TS_AUTHKEY:?set in ~/homelab/.env}
       - TS_HOSTNAME=prowlarr
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_USERSPACE=false
@@ -174,7 +174,7 @@ services:
     <<: *ts-sidecar
     hostname: sonarr
     environment:
-      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_AUTHKEY=${TS_AUTHKEY:?set in ~/homelab/.env}
       - TS_HOSTNAME=sonarr
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_USERSPACE=false
@@ -205,7 +205,7 @@ services:
     <<: *ts-sidecar
     hostname: radarr
     environment:
-      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_AUTHKEY=${TS_AUTHKEY:?set in ~/homelab/.env}
       - TS_HOSTNAME=radarr
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_USERSPACE=false
@@ -236,7 +236,7 @@ services:
     <<: *ts-sidecar
     hostname: seerr
     environment:
-      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_AUTHKEY=${TS_AUTHKEY:?set in ~/homelab/.env}
       - TS_HOSTNAME=seerr
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_USERSPACE=false
@@ -264,7 +264,7 @@ services:
     <<: *ts-sidecar
     hostname: bazarr
     environment:
-      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_AUTHKEY=${TS_AUTHKEY:?set in ~/homelab/.env}
       - TS_HOSTNAME=bazarr
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_USERSPACE=false
@@ -295,7 +295,7 @@ services:
     <<: *ts-sidecar
     hostname: shelfmark
     environment:
-      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_AUTHKEY=${TS_AUTHKEY:?set in ~/homelab/.env}
       - TS_HOSTNAME=shelfmark
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_USERSPACE=false
@@ -340,7 +340,7 @@ services:
     <<: *ts-sidecar
     hostname: grimmory
     environment:
-      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_AUTHKEY=${TS_AUTHKEY:?set in ~/homelab/.env}
       - TS_HOSTNAME=grimmory
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_USERSPACE=false
@@ -368,7 +368,7 @@ services:
       TZ: Europe/Ljubljana
       DATABASE_URL: jdbc:mariadb://grimmory-db:3306/grimmory
       DATABASE_USERNAME: grimmory
-      DATABASE_PASSWORD: ${GRIMMORY_DB_PASSWORD}
+      DATABASE_PASSWORD: ${GRIMMORY_DB_PASSWORD:?set in ~/homelab/.env}
       API_DOCS_ENABLED: "false"
       DISK_TYPE: LOCAL
     healthcheck:
@@ -394,10 +394,10 @@ services:
     restart: unless-stopped
     environment:
       <<: *media-env
-      MYSQL_ROOT_PASSWORD: ${GRIMMORY_DB_ROOT_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${GRIMMORY_DB_ROOT_PASSWORD:?set in ~/homelab/.env}
       MYSQL_DATABASE: grimmory
       MYSQL_USER: grimmory
-      MYSQL_PASSWORD: ${GRIMMORY_DB_PASSWORD}
+      MYSQL_PASSWORD: ${GRIMMORY_DB_PASSWORD:?set in ~/homelab/.env}
     volumes:
       - grimmory-db-config:/config
     networks:
