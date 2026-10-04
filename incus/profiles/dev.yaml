@@ -1,7 +1,7 @@
 description: Sandboxed dev VM (Docker + Tailscale), managed by homelab-dev
 config:
-  limits.cpu: "4"
-  limits.memory: 8GiB
+  limits.cpu: "24"
+  limits.memory: 32GiB
   cloud-init.user-data: |
     #cloud-config
     package_update: true
@@ -30,6 +30,10 @@ config:
       - curl -fsSL https://pkgs.tailscale.com/stable/debian/trixie.tailscale-keyring.list -o /etc/apt/sources.list.d/tailscale.list
       - apt-get update
       - DEBIAN_FRONTEND=noninteractive apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin tailscale
+      # cloud-init leaves the account locked ("!" in shadow), which this
+      # image's sshd refuses even for key logins. "*" means no valid
+      # password but not locked.
+      - usermod -p '*' dev
       # Per-VM key to register as a deploy key on the one repo this VM is for.
       - sudo -u dev ssh-keygen -q -t ed25519 -N "" -C "dev@$(hostname)" -f /home/dev/.ssh/id_ed25519
 devices:
