@@ -16,7 +16,10 @@ usage() {
     cat >&2 <<EOF
 Usage: homelab-dev <command> [args]
 
-  up <project>                 create the VM if missing, start it if stopped
+  up <project> [toolchain...]  create the VM if missing, start it if stopped;
+                               toolchains are installed on creation only
+  install <project> <toolchain...>
+                               install toolchains (incus/toolchains/*.sh)
   stop <project>               shut the VM down
   shell <project>              open a shell as the dev user
   snapshot <project> [name]    snapshot the VM (default name: timestamp)
@@ -48,9 +51,33 @@ wait_for_agent() {
     exit 1
 }
 
+toolchain_script() {
+    if [[ ! "$1" =~ ^[a-z0-9-]+$ ]] || [ ! -f "$INCUS_DIR/toolchains/$1.sh" ]; then
+        echo "unknown toolchain: $1" >&2
+        exit 1
+    fi
+    echo "$INCUS_DIR/toolchains/$1.sh"
+}
+
+cmd_install() {
+    local vm toolchain script
+    [ $# -ge 2 ] || usage
+    vm="$(vm_name "$1")"
+    shift
+    for toolchain in "$@"; do
+        script="$(toolchain_script "$toolchain")"
+        echo "Installing $toolchain on $vm..."
+        incus exec "$vm" -- bash -s < "$script"
+    done
+}
+
 cmd_up() {
-    local vm key
+    local vm key toolchain
     vm="$(vm_name "${1:-}")"
+    # Catch a mistyped toolchain before spending minutes creating the VM.
+    for toolchain in "${@:2}"; do
+        toolchain_script "$toolchain" >/dev/null
+    done
 
     # Keep the profile in step with the repo. Limits apply to existing VMs
     # too; cloud-init changes only affect VMs created afterwards.
@@ -81,6 +108,10 @@ cmd_up() {
     printf '%s' "$key" | incus exec "$vm" -- sh -c 'umask 077; cat > /run/ts-authkey'
     incus exec "$vm" -- tailscale up --auth-key=file:/run/ts-authkey --hostname="$vm"
     incus exec "$vm" -- rm -f /run/ts-authkey
+
+    if [ $# -ge 2 ]; then
+        cmd_install "$@"
+    fi
 
     echo
     echo "$vm is ready: ssh dev@$vm"
@@ -127,6 +158,6 @@ cmd_list() {
 cmd="$1"
 shift
 case "$cmd" in
-    up | stop | shell | snapshot | restore | destroy | list) "cmd_$cmd" "$@" ;;
+    up | install | stop | shell | snapshot | restore | destroy | list) "cmd_$cmd" "$@" ;;
     *) usage ;;
 esac
