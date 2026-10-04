@@ -34,6 +34,9 @@ config:
       # image's sshd refuses even for key logins. "*" means no valid
       # password but not locked.
       - usermod -p '*' dev
+      # Author identity for commits made in the VM.
+      - git config --system user.name "Rok Černič"
+      - git config --system user.email "rok.cernic@gmail.com"
       # Per-VM key to register as a deploy key on the one repo this VM is for.
       - sudo -u dev ssh-keygen -q -t ed25519 -N "" -C "dev@$(hostname)" -f /home/dev/.ssh/id_ed25519
 devices:
