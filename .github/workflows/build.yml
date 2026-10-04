@@ -7,7 +7,8 @@ on:
   push:
     paths-ignore:
       - "**.md" # don't rebuild if only documentation has changed
-      - stacks/** # don't rebuild if only dotfiles have changed
+      - stacks/** # compose stacks, pulled onto the host by homelab-sync
+      - dotfiles/** # applied on the host by chezmoi via homelab-sync
       - incus/** # Incus config, applied on the host (see incus/README.md)
       - ucore-setup.bu # don't rebuild if only ucore-setup.bu has changed
       - ignition/** # host provisioning config, not part of the image
