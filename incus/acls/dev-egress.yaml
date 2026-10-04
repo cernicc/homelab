@@ -1,0 +1,12 @@
+description: Dev VMs get the internet only -- no host, LAN or tailnet
+# Incus evaluates reject before allow regardless of order here, so the
+# private ranges are carved out of the catch-all allow below.
+egress:
+  - action: reject
+    destination: 10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,100.64.0.0/10,169.254.0.0/16
+    description: Private, CGNAT (tailnet) and link-local ranges
+    state: enabled
+  - action: allow
+    description: Everything else
+    state: enabled
+ingress: []

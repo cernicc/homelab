@@ -1,0 +1,47 @@
+description: Sandboxed dev VM (Docker + Tailscale), managed by homelab-dev
+config:
+  limits.cpu: "4"
+  limits.memory: 8GiB
+  cloud-init.user-data: |
+    #cloud-config
+    package_update: true
+    packages:
+      - ca-certificates
+      - curl
+      - git
+      - openssh-server
+    ssh_pwauth: false
+    groups:
+      - docker
+    users:
+      - name: dev
+        shell: /bin/bash
+        groups: [sudo, docker]
+        sudo: "ALL=(ALL) NOPASSWD:ALL"
+        ssh_authorized_keys:
+          - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINMQ0ZTKjB40zWkigNsC9dFF1oZQmvgrKTH9JlHzVptK batman
+    runcmd:
+      # Docker and Tailscale from their own apt repos; Debian's docker.io
+      # lacks the buildx/compose plugins the Dev Containers tooling expects.
+      - install -m 0755 -d /etc/apt/keyrings
+      - curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+      - echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian trixie stable" > /etc/apt/sources.list.d/docker.list
+      - curl -fsSL https://pkgs.tailscale.com/stable/debian/trixie.noarmor.gpg -o /usr/share/keyrings/tailscale-archive-keyring.gpg
+      - curl -fsSL https://pkgs.tailscale.com/stable/debian/trixie.tailscale-keyring.list -o /etc/apt/sources.list.d/tailscale.list
+      - apt-get update
+      - DEBIAN_FRONTEND=noninteractive apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin tailscale
+      # Per-VM key to register as a deploy key on the one repo this VM is for.
+      - sudo -u dev ssh-keygen -q -t ed25519 -N "" -C "dev@$(hostname)" -f /home/dev/.ssh/id_ed25519
+devices:
+  root:
+    type: disk
+    path: /
+    pool: default
+    size: 60GiB
+  eth0:
+    type: nic
+    name: eth0
+    network: incusdev
+    # Bridge ACLs don't cover traffic between instances on the same bridge;
+    # this keeps dev VMs from reaching each other.
+    security.port_isolation: "true"

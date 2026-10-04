@@ -1,0 +1,132 @@
+#!/bin/bash
+# Manage sandboxed dev VMs on Incus -- see incus/README.md.
+set -euo pipefail
+
+INCUS_DIR="$HOME/homelab/incus"
+ENV_FILE="$HOME/homelab/.env"
+IMAGE="images:debian/13/cloud"
+PROFILE="dev"
+
+# cernic isn't in incus-admin (which is root-equivalent anyway).
+incus() {
+    sudo /usr/bin/incus "$@"
+}
+
+usage() {
+    cat >&2 <<EOF
+Usage: homelab-dev <command> [args]
+
+  up <project>                 create the VM if missing, start it if stopped
+  stop <project>               shut the VM down
+  shell <project>              open a shell as the dev user
+  snapshot <project> [name]    snapshot the VM (default name: timestamp)
+  restore <project> <name>     roll the VM back to a snapshot
+  destroy <project>            delete the VM and all its snapshots
+  list                         list dev VMs
+EOF
+    exit 1
+}
+
+vm_name() {
+    if [[ ! "${1:-}" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
+        echo "project name must be lowercase letters, digits and dashes" >&2
+        exit 1
+    fi
+    echo "dev-$1"
+}
+
+read_env() {
+    sed -n "s/^$1=//p" "$ENV_FILE" | tail -n1
+}
+
+wait_for_agent() {
+    for _ in $(seq 90); do
+        incus exec "$1" -- true 2>/dev/null && return 0
+        sleep 2
+    done
+    echo "$1: incus agent did not come up" >&2
+    exit 1
+}
+
+cmd_up() {
+    local vm key
+    vm="$(vm_name "${1:-}")"
+
+    # Keep the profile in step with the repo. Limits apply to existing VMs
+    # too; cloud-init changes only affect VMs created afterwards.
+    incus profile show "$PROFILE" >/dev/null 2>&1 || incus profile create "$PROFILE"
+    incus profile edit "$PROFILE" < "$INCUS_DIR/profiles/$PROFILE.yaml"
+
+    if incus info "$vm" >/dev/null 2>&1; then
+        if [ "$(incus list "^$vm\$" -f csv -c s)" != "RUNNING" ]; then
+            incus start "$vm"
+        fi
+        echo "$vm is running: ssh dev@$vm"
+        return
+    fi
+
+    key="$(read_env TS_DEV_AUTHKEY)"
+    if [ -z "$key" ]; then
+        echo "TS_DEV_AUTHKEY is not set in $ENV_FILE" >&2
+        exit 1
+    fi
+
+    incus launch "$IMAGE" "$vm" --vm --profile "$PROFILE"
+    wait_for_agent "$vm"
+    echo "Waiting for cloud-init (installs Docker and Tailscale)..."
+    incus exec "$vm" -- cloud-init status --wait
+
+    # Hand the auth key over on stdin so it never lands in the instance
+    # config or in a process argument list.
+    printf '%s' "$key" | incus exec "$vm" -- sh -c 'umask 077; cat > /run/ts-authkey'
+    incus exec "$vm" -- tailscale up --auth-key=file:/run/ts-authkey --hostname="$vm"
+    incus exec "$vm" -- rm -f /run/ts-authkey
+
+    echo
+    echo "$vm is ready: ssh dev@$vm"
+    echo "Deploy key to add (with write access) to the project's repo:"
+    incus exec "$vm" -- cat /home/dev/.ssh/id_ed25519.pub
+}
+
+cmd_stop() {
+    incus stop "$(vm_name "${1:-}")"
+}
+
+cmd_shell() {
+    incus exec "$(vm_name "${1:-}")" -- su - dev
+}
+
+cmd_snapshot() {
+    incus snapshot create "$(vm_name "${1:-}")" "${2:-$(date +%Y%m%d-%H%M%S)}"
+}
+
+cmd_restore() {
+    [ -n "${2:-}" ] || usage
+    incus snapshot restore "$(vm_name "${1:-}")" "$2"
+}
+
+cmd_destroy() {
+    local vm answer
+    vm="$(vm_name "${1:-}")"
+    read -r -p "Delete $vm and all its snapshots? Type the VM name to confirm: " answer
+    if [ "$answer" != "$vm" ]; then
+        echo "Aborted" >&2
+        exit 1
+    fi
+    # Deregister from the tailnet so the node doesn't linger in the admin
+    # console; fails harmlessly if the VM is stopped.
+    incus exec "$vm" -- tailscale logout 2>/dev/null || true
+    incus delete --force "$vm"
+}
+
+cmd_list() {
+    incus list '^dev-'
+}
+
+[ $# -ge 1 ] || usage
+cmd="$1"
+shift
+case "$cmd" in
+    up | stop | shell | snapshot | restore | destroy | list) "cmd_$cmd" "$@" ;;
+    *) usage ;;
+esac
