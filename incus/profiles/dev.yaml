@@ -37,7 +37,7 @@ devices:
     type: disk
     path: /
     pool: default
-    size: 60GiB
+    size: 150GiB
   eth0:
     type: nic
     name: eth0
