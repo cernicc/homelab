@@ -5,6 +5,7 @@ Incus configuration for `alfred`. Its only use so far is dev VMs: sandboxed deve
 - `preseed.yaml` -- one-time init: Incus storage pool and the isolated `incusdev` bridge
 - `acls/dev-egress.yaml` -- egress ACL on that bridge: internet only
 - `profiles/dev.yaml` -- VM size and cloud-init (Docker, Tailscale, `dev` user)
+- `toolchains/<name>.sh` -- optional per-language setup, run as root inside a VM (`rust` so far)
 - `homelab-dev` (in `dotfiles/dot_local/bin/`) -- create/snapshot/destroy VMs
 
 ## One-time setup
@@ -44,6 +45,8 @@ Later changes to the ACL are applied with `sudo incus network acl edit dev-egres
 
 ```bash
 homelab-dev up myproject          # creates dev-myproject, prints its deploy key
+homelab-dev up myproject rust     # same, plus the Rust toolchain
+homelab-dev install myproject rust   # add a toolchain to an existing VM
 homelab-dev snapshot myproject    # before letting an agent loose
 homelab-dev restore myproject <snapshot>
 homelab-dev destroy myproject
