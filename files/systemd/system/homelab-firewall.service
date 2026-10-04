@@ -12,7 +12,15 @@ ExecStart=-/usr/bin/firewall-cmd --zone=tailscale --add-interface=tailscale0 --p
 ExecStart=-/usr/bin/firewall-cmd --zone=tailscale --add-port=80/tcp --permanent
 ExecStart=-/usr/bin/firewall-cmd --zone=tailscale --add-port=443/tcp --permanent
 ExecStart=-/usr/bin/firewall-cmd --zone=tailscale --add-service=ssh --permanent
-ExecStart=-/usr/bin/firewall-cmd --zone=trusted --change-interface=incusbr --permanent
+ExecStart=-/usr/bin/firewall-cmd --zone=trusted --remove-interface=incusbr --permanent
+ExecStart=-/usr/bin/firewall-cmd --new-zone=dev --permanent
+ExecStart=-/usr/bin/firewall-cmd --zone=dev --add-interface=incusdev --permanent
+ExecStart=-/usr/bin/firewall-cmd --zone=dev --add-service=dhcp --permanent
+ExecStart=-/usr/bin/firewall-cmd --zone=dev --add-service=dns --permanent
+ExecStart=-/usr/bin/firewall-cmd --new-policy=dev-out --permanent
+ExecStart=-/usr/bin/firewall-cmd --policy=dev-out --add-ingress-zone=dev --permanent
+ExecStart=-/usr/bin/firewall-cmd --policy=dev-out --add-egress-zone=ANY --permanent
+ExecStart=-/usr/bin/firewall-cmd --policy=dev-out --set-target=ACCEPT --permanent
 ExecStart=-/usr/bin/firewall-cmd --add-service=ssh --permanent
 ExecStart=-/usr/bin/firewall-cmd --add-port=80/tcp --permanent
 ExecStart=-/usr/bin/firewall-cmd --add-port=443/tcp --permanent

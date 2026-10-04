@@ -1,0 +1,22 @@
+# One-time Incus initialisation for dev VMs -- see incus/README.md.
+# The `dev-egress` ACL referenced below must exist before this is applied.
+storage_pools:
+  # Loop-backed btrfs (sparse file under /var/lib/incus/disks/) rather than
+  # `dir` on the host's XFS, so VM snapshots and restores are instant.
+  - name: default
+    driver: btrfs
+    config:
+      size: 500GiB
+
+networks:
+  # Dedicated bridge for dev VMs. IPv6 is off so the IPv4-only ACL can't be
+  # sidestepped. Unmatched traffic in either direction is rejected (the ACL
+  # default), so nothing outside can open a connection into a VM over this
+  # bridge -- access is via Tailscale from inside the VM.
+  - name: incusdev
+    type: bridge
+    config:
+      ipv4.address: 10.77.0.1/24
+      ipv4.nat: "true"
+      ipv6.address: none
+      security.acls: dev-egress

@@ -116,6 +116,10 @@ Then commit and push — the machine will pick up the change automatically withi
 
 Note: don't use a glob in `.chezmoiremove` that matches still-enabled symlinks (e.g. `docker-compose@*.service`) — chezmoi treats a target matched by both an active source entry and a `.chezmoiremove` pattern as a conflict ("inconsistent state") and refuses to apply *anything*, not just skip that one entry. Keep entries here as exact, literal paths for stacks that no longer exist.
 
+## Dev VMs
+
+Sandboxed Incus VMs for running AI agents against a single project repo, managed with `homelab-dev` — see [incus/README.md](incus/README.md).
+
 ## Auto-sync
 
 The machine runs `homelab-sync` every 5 minutes via a systemd timer. Each run:
