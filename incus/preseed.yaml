@@ -6,7 +6,7 @@ storage_pools:
   - name: default
     driver: btrfs
     config:
-      size: 500GiB
+      size: 1TiB
 
 networks:
   # Dedicated bridge for dev VMs. IPv6 is off so the IPv4-only ACL can't be
