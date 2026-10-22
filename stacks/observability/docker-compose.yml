@@ -35,17 +35,57 @@ services:
     image: grafana/alloy:v1.21.1
     restart: unless-stopped
     command: run --server.http.listen-addr=0.0.0.0:12345 /etc/alloy/config.alloy
-    # The podman socket is labelled user_tmp_t and can't be relabelled with
-    # :Z, so SELinux denies container_t from connecting to it and discovery
-    # fails with "permission denied" -- no logs ever reach Loki. Disable
-    # labelling for this container only.
-    security_opt:
-      - label=disable
+    # Talks to podman only through socket-proxy below, never the socket itself.
     volumes:
       - ./alloy/config.alloy:/etc/alloy/config.alloy:ro,Z
-      - ${XDG_RUNTIME_DIR}/podman/podman.sock:/var/run/docker.sock:ro
     networks:
       - observability
+      - socket-proxy
+    depends_on:
+      - socket-proxy
+    logging: *logging
+
+  # Read-only gate in front of the podman socket for Alloy. Full socket access
+  # is equivalent to running code as the host user (start a container mounting
+  # $HOME, exec into any container), so Alloy gets only the four GET calls log
+  # collection needs: list, inspect, logs, events. Everything else -- including
+  # GET .../archive and .../export, which would read files out of any
+  # container -- is rejected, and only the `alloy` host may connect.
+  #
+  # The socket is labelled user_tmp_t and can't be relabelled with :Z, so
+  # SELinux confinement is disabled here (and only here) to let it connect.
+  # Runs as container root because under rootless podman that maps to the
+  # host user who owns the socket; it still drops all capabilities.
+  socket-proxy:
+    image: docker.io/wollomatic/socket-proxy:1.13.1
+    restart: unless-stopped
+    user: "0:0"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - label=disable
+      - no-new-privileges
+    mem_limit: 64M
+    command:
+      - -loglevel=info
+      - -listenip=0.0.0.0
+      - -allowfrom=alloy
+      - -allowGET=(/v1\.[0-9]+)?/(_ping|version|events|containers/json|containers/[a-zA-Z0-9_.-]+/(json|logs))
+      - -allowHEAD=(/v1\.[0-9]+)?/_ping
+      - -allowhealthcheck
+      - -watchdoginterval=3600
+      - -stoponwatchdog
+      - -shutdowngracetime=5
+    healthcheck:
+      test: ["CMD", "./healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 2
+    volumes:
+      - ${XDG_RUNTIME_DIR}/podman/podman.sock:/var/run/docker.sock:ro
+    networks:
+      - socket-proxy
     logging: *logging
 
 volumes:
@@ -55,3 +95,7 @@ volumes:
 networks:
   observability:
     driver: bridge
+  # Only Alloy and the proxy; no route out.
+  socket-proxy:
+    driver: bridge
+    internal: true

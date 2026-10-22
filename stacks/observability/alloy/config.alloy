@@ -1,11 +1,12 @@
-// Discover all running containers via Podman socket
+// Discover all running containers via the read-only socket-proxy in front of
+// the Podman socket
 discovery.docker "containers" {
-  host = "unix:///var/run/docker.sock"
+  host = "tcp://socket-proxy:2375"
 }
 
 // Collect logs from discovered containers and forward to Loki
 loki.source.docker "containers" {
-  host       = "unix:///var/run/docker.sock"
+  host       = "tcp://socket-proxy:2375"
   targets    = discovery.docker.containers.targets
   forward_to = [loki.write.default.receiver]
 
