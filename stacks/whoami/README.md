@@ -8,6 +8,8 @@ Traefik was removed (see git history) and replaced with per-service [Tailscale s
 
 This stack was the pilot for the pattern -- disposable, no real function, cheap to redo -- confirming that `cap_add: NET_ADMIN` + a real `/dev/net/tun` device works from inside this repo's **rootless Podman** setup (`PODMAN_USERNS=keep-id`, via `podman compose`) under its default SELinux enforcement, which every guide for this pattern assumes root Docker rather than rootless Podman for. It's now also rolled out to `stirling-pdf`, with the rest of the externally-reachable stacks to follow (see the removed Traefik labels in git history for the full list) -- each gets its own `<service>-ts` sidecar and its own `.ts.net` name.
 
+Every sidecar sets `TS_DEBUG_FIREWALL_MODE=nftables`. Left to auto-detect, tailscaled picks iptables, but the host kernel has no legacy `filter` table, so every sidecar logged `router config failed ... can't initialize iptables table 'filter'` and ran without its `ts-input`/`ts-forward` rules (which, among other things, drop packets spoofing a tailnet `100.x` address from outside the tunnel). nftables mode talks to the kernel via netlink and works.
+
 ## One-time setup (not tracked in git)
 
 1. ACL policy -> add `"tagOwners": {"tag:homelab": ["group:owner", "autogroup:admin"]}` (or whichever owner makes sense) so a key can tag nodes with it.

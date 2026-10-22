@@ -57,6 +57,7 @@ services:
       - TS_HOSTNAME=jellyfin
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_USERSPACE=false
+      - TS_DEBUG_FIREWALL_MODE=nftables
       - TS_SERVE_CONFIG=/config/serve.json
     volumes:
       - ./ts-config/jellyfin:/config:ro,Z
@@ -94,6 +95,7 @@ services:
       - TS_HOSTNAME=qbittorrent
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_USERSPACE=false
+      - TS_DEBUG_FIREWALL_MODE=nftables
       - TS_SERVE_CONFIG=/config/serve.json
     volumes:
       - ./ts-config/qbittorrent:/config:ro,Z
@@ -139,6 +141,7 @@ services:
       - TS_HOSTNAME=prowlarr
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_USERSPACE=false
+      - TS_DEBUG_FIREWALL_MODE=nftables
       - TS_SERVE_CONFIG=/config/serve.json
     volumes:
       - ./ts-config/prowlarr:/config:ro,Z
@@ -182,6 +185,7 @@ services:
       - TS_HOSTNAME=cleanuparr
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_USERSPACE=false
+      - TS_DEBUG_FIREWALL_MODE=nftables
       - TS_SERVE_CONFIG=/config/serve.json
     volumes:
       - ./ts-config/cleanuparr:/config:ro,Z
@@ -229,6 +233,7 @@ services:
       - TS_HOSTNAME=sonarr
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_USERSPACE=false
+      - TS_DEBUG_FIREWALL_MODE=nftables
       - TS_SERVE_CONFIG=/config/serve.json
     volumes:
       - ./ts-config/sonarr:/config:ro,Z
@@ -260,6 +265,7 @@ services:
       - TS_HOSTNAME=radarr
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_USERSPACE=false
+      - TS_DEBUG_FIREWALL_MODE=nftables
       - TS_SERVE_CONFIG=/config/serve.json
     volumes:
       - ./ts-config/radarr:/config:ro,Z
@@ -291,6 +297,7 @@ services:
       - TS_HOSTNAME=seerr
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_USERSPACE=false
+      - TS_DEBUG_FIREWALL_MODE=nftables
       - TS_SERVE_CONFIG=/config/serve.json
     volumes:
       - ./ts-config/seerr:/config:ro,Z
@@ -319,6 +326,7 @@ services:
       - TS_HOSTNAME=bazarr
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_USERSPACE=false
+      - TS_DEBUG_FIREWALL_MODE=nftables
       - TS_SERVE_CONFIG=/config/serve.json
     volumes:
       - ./ts-config/bazarr:/config:ro,Z
@@ -350,6 +358,7 @@ services:
       - TS_HOSTNAME=shelfmark
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_USERSPACE=false
+      - TS_DEBUG_FIREWALL_MODE=nftables
       - TS_SERVE_CONFIG=/config/serve.json
     volumes:
       - ./ts-config/shelfmark:/config:ro,Z
@@ -395,6 +404,7 @@ services:
       - TS_HOSTNAME=grimmory
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_USERSPACE=false
+      - TS_DEBUG_FIREWALL_MODE=nftables
       - TS_SERVE_CONFIG=/config/serve.json
     volumes:
       - ./ts-config/grimmory:/config:ro,Z

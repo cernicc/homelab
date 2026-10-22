@@ -18,6 +18,7 @@ services:
       - TS_HOSTNAME=stirling-pdf
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_USERSPACE=false
+      - TS_DEBUG_FIREWALL_MODE=nftables
       - TS_SERVE_CONFIG=/config/serve.json
     cap_add:
       - NET_ADMIN
