@@ -10,7 +10,7 @@ services:
   # namespace entirely (network_mode: service:whoami-ts), so it has no
   # networking of its own below.
   whoami-ts:
-    image: tailscale/tailscale:v1.102.4
+    image: tailscale/tailscale:v1.104.2
     hostname: whoami
     restart: unless-stopped
     environment:

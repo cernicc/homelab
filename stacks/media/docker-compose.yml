@@ -12,7 +12,7 @@ x-media-env: &media-env
   TZ: Europe/Ljubljana
 
 x-ts-sidecar: &ts-sidecar
-  image: tailscale/tailscale:v1.102.4
+  image: tailscale/tailscale:v1.104.2
   restart: unless-stopped
   cap_add:
     - NET_ADMIN
@@ -32,7 +32,7 @@ services:
   # path mappings are needed. Runs as root only to create the tree and chown
   # it to PUID/PGID, then exits; the app containers wait for it.
   data-init:
-    image: busybox:1.37.0
+    image: busybox:1.38.0
     restart: "no"
     command: >-
       sh -c "mkdir -p /data/torrents/movies /data/torrents/tv /data/torrents/books
@@ -67,7 +67,7 @@ services:
           - jellyfin
 
   jellyfin:
-    image: lscr.io/linuxserver/jellyfin:12.1ubu2604-ls50
+    image: lscr.io/linuxserver/jellyfin:12.2ubu2604-ls55
     restart: unless-stopped
     network_mode: service:jellyfin-ts
     environment:
@@ -116,7 +116,7 @@ services:
   # `movies` -> /data/torrents/movies, `tv` -> /data/torrents/tv (matching the
   # categories in Radarr/Sonarr's download client settings).
   qbittorrent:
-    image: lscr.io/linuxserver/qbittorrent:5.2.3
+    image: lscr.io/linuxserver/qbittorrent:5.3.0
     restart: unless-stopped
     network_mode: service:qbittorrent-ts
     environment:
@@ -301,7 +301,7 @@ services:
           - seerr
 
   seerr:
-    image: ghcr.io/seerr-team/seerr:v3.4.1
+    image: ghcr.io/seerr-team/seerr:v3.5.1
     init: true
     restart: unless-stopped
     network_mode: service:seerr-ts
@@ -329,7 +329,7 @@ services:
           - bazarr
 
   bazarr:
-    image: lscr.io/linuxserver/bazarr:1.6.1
+    image: lscr.io/linuxserver/bazarr:1.6.2
     restart: unless-stopped
     network_mode: service:bazarr-ts
     environment:
@@ -369,7 +369,7 @@ services:
   # Copy, not Hardlink: Grimmory writes metadata into library files, which
   # would corrupt the torrent still seeding a hardlinked copy.
   shelfmark:
-    image: ghcr.io/calibrain/shelfmark-lite:v1.4.0
+    image: ghcr.io/calibrain/shelfmark-lite:v1.5.0
     restart: unless-stopped
     network_mode: service:shelfmark-ts
     environment:
@@ -441,7 +441,7 @@ services:
   # Only on the internal `grimmory-db` network: unreachable from the `media`
   # network, and no route to the internet.
   grimmory-db:
-    image: lscr.io/linuxserver/mariadb:11.8.8-r0-ls232
+    image: lscr.io/linuxserver/mariadb:11.8.9-r0-ls237
     restart: unless-stopped
     environment:
       <<: *media-env
