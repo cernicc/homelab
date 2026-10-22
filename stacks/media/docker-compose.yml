@@ -174,6 +174,53 @@ services:
       - media
     logging: *logging
 
+  cleanuparr-ts:
+    <<: *ts-sidecar
+    hostname: cleanuparr
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY:?set in ~/homelab/.env}
+      - TS_HOSTNAME=cleanuparr
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_USERSPACE=false
+      - TS_SERVE_CONFIG=/config/serve.json
+    volumes:
+      - ./ts-config/cleanuparr:/config:ro,Z
+      - cleanuparr-ts-state:/var/lib/tailscale
+    networks:
+      media:
+        aliases:
+          - cleanuparr
+
+  # Removes malware/fake releases (e.g. a lone .exe posing as an episode),
+  # stalled and failed-import downloads from qBittorrent and blocklists them
+  # in Sonarr/Radarr. All settings live in its SQLite DB under /config and
+  # are set in the web UI: qBittorrent at http://qbittorrent:8080, Sonarr at
+  # http://sonarr:8989, Radarr at http://radarr:7878. /data is mounted (at the
+  # same path qBittorrent reports) only so the download cleaner can tell
+  # which torrents still have hardlinks in the library. For blocklisted
+  # releases to stay out, enable "Sync Reject Blocklisted Torrent Hashes While
+  # Grabbing" on each app in Prowlarr (Settings -> Apps, advanced).
+  cleanuparr:
+    image: ghcr.io/cleanuparr/cleanuparr:2.10.12
+    restart: unless-stopped
+    network_mode: service:cleanuparr-ts
+    environment:
+      <<: *media-env
+      PORT: 11011
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11011/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+    depends_on:
+      data-init:
+        condition: service_completed_successfully
+    volumes:
+      - cleanuparr-config:/config
+      - data:/data:ro
+    logging: *logging
+
   sonarr-ts:
     <<: *ts-sidecar
     hostname: sonarr
@@ -425,6 +472,7 @@ volumes:
   shelfmark-config:
   grimmory-data:
   grimmory-db-config:
+  cleanuparr-config:
   jellyfin-ts-state:
   qbittorrent-ts-state:
   prowlarr-ts-state:
@@ -434,6 +482,7 @@ volumes:
   bazarr-ts-state:
   shelfmark-ts-state:
   grimmory-ts-state:
+  cleanuparr-ts-state:
 
 networks:
   media:
