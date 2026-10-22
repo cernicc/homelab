@@ -9,8 +9,12 @@ StandardOutput=journal
 StandardError=journal
 ExecStart=-/usr/bin/firewall-cmd --new-zone=tailscale --permanent
 ExecStart=-/usr/bin/firewall-cmd --zone=tailscale --add-interface=tailscale0 --permanent
-ExecStart=-/usr/bin/firewall-cmd --zone=tailscale --add-port=80/tcp --permanent
-ExecStart=-/usr/bin/firewall-cmd --zone=tailscale --add-port=443/tcp --permanent
+# 80/443 were for Traefik, since replaced by per-service Tailscale sidecars
+# that serve from their own network namespaces; nothing on the host listens
+# there any more. These are --permanent, so dropping the add lines alone
+# wouldn't close them on an already-provisioned host.
+ExecStart=-/usr/bin/firewall-cmd --zone=tailscale --remove-port=80/tcp --permanent
+ExecStart=-/usr/bin/firewall-cmd --zone=tailscale --remove-port=443/tcp --permanent
 ExecStart=-/usr/bin/firewall-cmd --zone=tailscale --add-service=ssh --permanent
 ExecStart=-/usr/bin/firewall-cmd --zone=trusted --remove-interface=incusbr --permanent
 ExecStart=-/usr/bin/firewall-cmd --new-zone=dev --permanent
@@ -22,8 +26,8 @@ ExecStart=-/usr/bin/firewall-cmd --policy=dev-out --add-ingress-zone=dev --perma
 ExecStart=-/usr/bin/firewall-cmd --policy=dev-out --add-egress-zone=ANY --permanent
 ExecStart=-/usr/bin/firewall-cmd --policy=dev-out --set-target=ACCEPT --permanent
 ExecStart=-/usr/bin/firewall-cmd --add-service=ssh --permanent
-ExecStart=-/usr/bin/firewall-cmd --add-port=80/tcp --permanent
-ExecStart=-/usr/bin/firewall-cmd --add-port=443/tcp --permanent
+ExecStart=-/usr/bin/firewall-cmd --remove-port=80/tcp --permanent
+ExecStart=-/usr/bin/firewall-cmd --remove-port=443/tcp --permanent
 ExecStart=/usr/bin/firewall-cmd --reload
 [Install]
 WantedBy=multi-user.target

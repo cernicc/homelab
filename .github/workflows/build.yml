@@ -39,7 +39,9 @@ jobs:
     steps:
       # the build is fully handled by the reusable github action
       - name: Build Custom Image
-        uses: blue-build/github-action@v1.11
+        # Pinned to a commit, not a tag: this step gets the cosign signing key,
+        # and a moved tag could exfiltrate it. v1.11 -- bump SHA and comment together.
+        uses: blue-build/github-action@24d146df25adc2cf579e918efe2d9bff6adea408 # v1.11
         with:
           recipe: ${{ matrix.recipe }}
           cosign_private_key: ${{ secrets.SIGNING_SECRET }}
