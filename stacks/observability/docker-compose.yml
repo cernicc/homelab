@@ -35,6 +35,12 @@ services:
     image: grafana/alloy:v1.21.1
     restart: unless-stopped
     command: run --server.http.listen-addr=0.0.0.0:12345 /etc/alloy/config.alloy
+    # The podman socket is labelled user_tmp_t and can't be relabelled with
+    # :Z, so SELinux denies container_t from connecting to it and discovery
+    # fails with "permission denied" -- no logs ever reach Loki. Disable
+    # labelling for this container only.
+    security_opt:
+      - label=disable
     volumes:
       - ./alloy/config.alloy:/etc/alloy/config.alloy:ro,Z
       - ${XDG_RUNTIME_DIR}/podman/podman.sock:/var/run/docker.sock:ro
