@@ -47,8 +47,9 @@ services:
 
   # Read-only gate in front of the podman socket for Alloy. Full socket access
   # is equivalent to running code as the host user (start a container mounting
-  # $HOME, exec into any container), so Alloy gets only the four GET calls log
-  # collection needs: list, inspect, logs, events. Everything else -- including
+  # $HOME, exec into any container), so Alloy gets only the GET calls log
+  # collection needs: list/inspect containers, their logs, events, and the
+  # network list (discovery labels targets by network). Everything else -- including
   # GET .../archive and .../export, which would read files out of any
   # container -- is rejected, and only the `alloy` host may connect.
   #
@@ -71,7 +72,7 @@ services:
       - -loglevel=info
       - -listenip=0.0.0.0
       - -allowfrom=alloy
-      - -allowGET=(/v1\.[0-9]+)?/(_ping|version|events|containers/json|containers/[a-zA-Z0-9_.-]+/(json|logs))
+      - -allowGET=(/v1\.[0-9]+)?/(_ping|version|events|networks|containers/json|containers/[a-zA-Z0-9_.-]+/(json|logs))
       - -allowHEAD=(/v1\.[0-9]+)?/_ping
       - -allowhealthcheck
       - -watchdoginterval=3600
