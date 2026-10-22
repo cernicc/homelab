@@ -98,9 +98,13 @@ services:
     volumes:
       - ./ts-config/qbittorrent:/config:ro,Z
       - qbittorrent-ts-state:/var/lib/tailscale
+    # TCP only. Under rootless podman, publishing 51413/udp makes rootlessport
+    # own the host side of that port, so replies to UDP the container sends
+    # *from* 51413 never get back in -- and that's the socket qBittorrent uses
+    # for DHT, UDP trackers and uTP. With it published, DHT sat at 0 nodes,
+    # every udp:// tracker timed out and magnets never fetched metadata.
     ports:
       - 51413:51413 # torrent peer port
-      - 51413:51413/udp
     networks:
       media:
         aliases:
