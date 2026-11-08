@@ -10,7 +10,7 @@ services:
   # namespace entirely (network_mode: service:stirling-pdf-ts), so it has no
   # networking of its own below.
   stirling-pdf-ts:
-    image: tailscale/tailscale:v1.104.2
+    image: tailscale/tailscale:v1.104.4
     hostname: pdf
     restart: unless-stopped
     environment:
@@ -30,7 +30,7 @@ services:
     logging: *logging
 
   stirling-pdf:
-    image: stirlingtools/stirling-pdf:3.2.1-fat
+    image: stirlingtools/stirling-pdf:3.3.0-fat
     restart: unless-stopped
     network_mode: service:stirling-pdf-ts
     environment:

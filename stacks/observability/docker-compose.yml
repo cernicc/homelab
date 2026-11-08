@@ -6,7 +6,7 @@ x-logging: &logging
 
 services:
   grafana:
-    image: grafana/grafana:13.2.4
+    image: grafana/grafana:13.3.0
     restart: unless-stopped
     environment:
       - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
@@ -32,7 +32,7 @@ services:
     logging: *logging
 
   alloy:
-    image: grafana/alloy:v1.21.1
+    image: grafana/alloy:v1.21.3
     restart: unless-stopped
     command: run --server.http.listen-addr=0.0.0.0:12345 /etc/alloy/config.alloy
     # Talks to podman only through socket-proxy below, never the socket itself.
@@ -58,7 +58,7 @@ services:
   # Runs as container root because under rootless podman that maps to the
   # host user who owns the socket; it still drops all capabilities.
   socket-proxy:
-    image: docker.io/wollomatic/socket-proxy:1.13.1
+    image: docker.io/wollomatic/socket-proxy:1.13.2
     restart: unless-stopped
     user: "0:0"
     read_only: true

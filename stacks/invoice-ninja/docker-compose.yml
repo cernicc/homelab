@@ -6,7 +6,7 @@ x-logging: &logging
 
 services:
   app:
-    image: invoiceninja/invoiceninja-debian:5.13.50
+    image: invoiceninja/invoiceninja-debian:5.13.53
     restart: unless-stopped
     environment:
       APP_ENV: ${APP_ENV:?set in ~/homelab/.env}
@@ -63,7 +63,7 @@ services:
     logging: *logging
 
   redis:
-    image: redis:8.10.2-alpine
+    image: redis:8.10.3-alpine
     restart: unless-stopped
     volumes:
       - redis_data:/data

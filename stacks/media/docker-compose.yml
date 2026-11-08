@@ -12,7 +12,7 @@ x-media-env: &media-env
   TZ: Europe/Ljubljana
 
 x-ts-sidecar: &ts-sidecar
-  image: tailscale/tailscale:v1.104.2
+  image: tailscale/tailscale:v1.104.4
   restart: unless-stopped
   cap_add:
     - NET_ADMIN
@@ -68,7 +68,7 @@ services:
           - jellyfin
 
   jellyfin:
-    image: lscr.io/linuxserver/jellyfin:12.2ubu2604-ls55
+    image: lscr.io/linuxserver/jellyfin:12.4ubu2604-ls58
     restart: unless-stopped
     network_mode: service:jellyfin-ts
     environment:
@@ -152,7 +152,7 @@ services:
           - prowlarr
 
   prowlarr:
-    image: lscr.io/linuxserver/prowlarr:2.6.5
+    image: lscr.io/linuxserver/prowlarr:2.7.0
     restart: unless-stopped
     network_mode: service:prowlarr-ts
     environment:
@@ -205,7 +205,7 @@ services:
   # releases to stay out, enable "Sync Reject Blocklisted Torrent Hashes While
   # Grabbing" on each app in Prowlarr (Settings -> Apps, advanced).
   cleanuparr:
-    image: ghcr.io/cleanuparr/cleanuparr:2.10.12
+    image: ghcr.io/cleanuparr/cleanuparr:2.11.0
     restart: unless-stopped
     network_mode: service:cleanuparr-ts
     environment:
@@ -378,7 +378,7 @@ services:
   # Copy, not Hardlink: Grimmory writes metadata into library files, which
   # would corrupt the torrent still seeding a hardlinked copy.
   shelfmark:
-    image: ghcr.io/calibrain/shelfmark-lite:v1.5.0
+    image: ghcr.io/calibrain/shelfmark-lite:v1.6.2
     restart: unless-stopped
     network_mode: service:shelfmark-ts
     environment:
@@ -451,7 +451,7 @@ services:
   # Only on the internal `grimmory-db` network: unreachable from the `media`
   # network, and no route to the internet.
   grimmory-db:
-    image: lscr.io/linuxserver/mariadb:11.8.9-r0-ls237
+    image: lscr.io/linuxserver/mariadb:11.8.9-r0-ls239
     restart: unless-stopped
     environment:
       <<: *media-env
