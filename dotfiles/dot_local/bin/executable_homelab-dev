@@ -7,7 +7,7 @@ ENV_FILE="$HOME/homelab/.env"
 IMAGE="images:debian/13/cloud"
 PROFILE="dev"
 
-# cernic isn't in incus-admin (which is root-equivalent anyway).
+# rok isn't in incus-admin (which is root-equivalent anyway).
 incus() {
     sudo /usr/bin/incus "$@"
 }

@@ -11,8 +11,8 @@ TimeoutStartSec=infinity
 StandardOutput=journal
 StandardError=journal
 ExecStartPre=/usr/bin/mkdir -p /etc/ucore-autorebase
-ExecStart=/usr/sbin/loginctl enable-linger cernic
-ExecStart=/usr/bin/runuser -l cernic -c '/usr/bin/chezmoi init --source "$HOME/homelab" --apply https://github.com/cernicc/homelab'
+ExecStart=/usr/sbin/loginctl enable-linger rok
+ExecStart=/usr/bin/runuser -l rok -c '/usr/bin/chezmoi init --source "$HOME/homelab" --apply https://github.com/cernicc/homelab'
 ExecStart=/usr/bin/touch /etc/ucore-autorebase/bootstrapped
 ExecStart=/usr/bin/systemctl disable homelab-bootstrap.service
 [Install]

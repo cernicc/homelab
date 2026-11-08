@@ -8,8 +8,8 @@
         "groups": [
           "wheel"
         ],
-        "homeDir": "/home/cernic",
-        "name": "cernic",
+        "homeDir": "/home/rok",
+        "name": "rok",
         "sshAuthorizedKeys": [
           "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINMQ0ZTKjB40zWkigNsC9dFF1oZQmvgrKTH9JlHzVptK batman"
         ],

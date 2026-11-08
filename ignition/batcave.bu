@@ -2,8 +2,8 @@ variant: fcos
 version: 1.7.0
 passwd:
   users:
-    - name: cernic
-      home_dir: /home/cernic
+    - name: rok
+      home_dir: /home/rok
       shell: /bin/bash
       groups:
         - wheel
