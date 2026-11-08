@@ -4,7 +4,7 @@ Personal homelab infrastructure.
 
 ## Ignition
 
-The `ignition/alfred.bu` file is the Butane source for provisioning the `alfred` machine. Whenever it is changed, recompile the ignition file and commit both:
+The `ignition/batcave.bu` file is the Butane source for provisioning the `batcave` machine. Whenever it is changed, recompile the ignition file and commit both:
 
 ```bash
 make ignition
@@ -13,14 +13,14 @@ make ignition
 To install uCore on a new machine:
 
 ```bash
-sudo coreos-installer install --ignition-url https://github.com/cernicc/homelab/raw/main/ignition/alfred.ign /dev/sdX
+sudo coreos-installer install --ignition-url https://github.com/cernicc/homelab/raw/main/ignition/batcave.ign /dev/sdX
 ```
 
 ## Provisioning a new machine
 
 Ignition is kept as small as possible: it only does the things that genuinely can't live in the OS image — disk layout (LUKS/TPM2), the `cernic` user + SSH key, the hostname, and the container-signing trust bootstrap (`policy.json` + `registries.d` + `cosign.pub`) needed to verify the custom image the *first* time it's pulled. A signed image can't carry its own verification key, so that trust bootstrap can't move into the image itself. Everything else — sshd hardening, service enablement, the firewall unit, the dotfiles bootstrap unit, the bootc auto-update schedule, the timezone symlink — is baked into the image via `recipes/ucore-server.yml` (`files/system/`, `files/systemd/`), so it can be changed after a machine is already provisioned: push a change, wait for the next image build and the daily `bootc-fetch-apply-updates.timer` run, no reprovisioning required.
 
-Installing writes `ignition/alfred.ign` to disk once; everything after that runs unattended in a chain of gated, one-shot systemd services, each disabling itself and rebooting into the next stage. The `unverified`/`signed` condition-file markers under `/etc/ucore-autorebase/` are what let each autorebase unit know whether it still needs to run after a reboot; `homelab-bootstrap.service` (shipped in the image) uses a `bootstrapped` marker the same way.
+Installing writes `ignition/batcave.ign` to disk once; everything after that runs unattended in a chain of gated, one-shot systemd services, each disabling itself and rebooting into the next stage. The `unverified`/`signed` condition-file markers under `/etc/ucore-autorebase/` are what let each autorebase unit know whether it still needs to run after a reboot; `homelab-bootstrap.service` (shipped in the image) uses a `bootstrapped` marker the same way.
 
 The automatic chain after step 2, in order:
 
@@ -46,7 +46,7 @@ podman run --security-opt label=disable --pull=always --rm -v .:/data -w /data \
 Boot from the ISO and run:
 
 ```bash
-sudo coreos-installer install --ignition-url https://github.com/cernicc/homelab/raw/main/ignition/alfred.ign /dev/sdX
+sudo coreos-installer install --ignition-url https://github.com/cernicc/homelab/raw/main/ignition/batcave.ign /dev/sdX
 ```
 
 Then reboot. The machine will automatically rebase to the custom image and reboot twice, then apply dotfiles and configure firewall rules. Stacks will not start until `.env` is configured (see step 5).

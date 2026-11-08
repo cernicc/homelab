@@ -1,6 +1,6 @@
 # Incus
 
-Incus configuration for `alfred`. Its only use so far is dev VMs: sandboxed development machines for running AI agents: one Incus VM per project, each with Docker (for the project's own `.devcontainer`), a clone of that one repo, and its own Tailscale node. The VM is the security boundary -- the agent can be root inside it, and has no route to `alfred`, the LAN, the other stacks or other dev VMs.
+Incus configuration for `batcave`. Its only use so far is dev VMs: sandboxed development machines for running AI agents: one Incus VM per project, each with Docker (for the project's own `.devcontainer`), a clone of that one repo, and its own Tailscale node. The VM is the security boundary -- the agent can be root inside it, and has no route to `batcave`, the LAN, the other stacks or other dev VMs.
 
 - `preseed.yaml` -- one-time init: Incus storage pool and the isolated `incusdev` bridge
 - `acls/dev-egress.yaml` -- egress ACL on that bridge: internet only
@@ -19,7 +19,7 @@ Incus configuration for `alfred`. Its only use so far is dev VMs: sandboxed deve
    {"src": ["autogroup:admin"], "dst": ["tag:dev"], "ip": ["*"]}
    ```
 
-3. Settings -> Keys -> generate an auth key: reusable, **not** ephemeral, tagged `tag:dev`. Set it as `TS_DEV_AUTHKEY` in `~/homelab/.env` on `alfred`. Never reuse `TS_AUTHKEY` here.
+3. Settings -> Keys -> generate an auth key: reusable, **not** ephemeral, tagged `tag:dev`. Set it as `TS_DEV_AUTHKEY` in `~/homelab/.env` on `batcave`. Never reuse `TS_AUTHKEY` here.
 
 ### 2. Firewall
 
@@ -63,6 +63,6 @@ After `up`:
 From `homelab-dev shell <project>`:
 
 - `curl -sI https://github.com` -- works (internet and DNS)
-- `curl -m 5 http://10.77.0.1:22` and `curl -m 5 http://<alfred LAN IP>:22` -- fail (host)
+- `curl -m 5 http://10.77.0.1:22` and `curl -m 5 http://<batcave LAN IP>:22` -- fail (host)
 - `curl -m 5 https://whoami.<tailnet-name>.ts.net` -- fails (tailnet policy)
 - `ping -c1 -W2 <another dev VM's 10.77.0.x address>` -- fails (port isolation)

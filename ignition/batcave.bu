@@ -26,7 +26,7 @@ storage:
     - path: /etc/hostname
       mode: 0644
       contents:
-        inline: alfred
+        inline: batcave
 
     - path: /etc/pki/containers/cernicc-homelab.pub
       mode: 0644

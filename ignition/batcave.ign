@@ -37,7 +37,7 @@
         "path": "/etc/hostname",
         "contents": {
           "compression": "",
-          "source": "data:,alfred"
+          "source": "data:,batcave"
         },
         "mode": 420
       },

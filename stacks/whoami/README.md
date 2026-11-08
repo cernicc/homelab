@@ -15,13 +15,13 @@ Every sidecar sets `TS_DEBUG_FIREWALL_MODE=nftables`. Left to auto-detect, tails
 1. ACL policy -> add `"tagOwners": {"tag:homelab": ["group:owner", "autogroup:admin"]}` (or whichever owner makes sense) so a key can tag nodes with it.
 2. Tailscale admin console -> Settings -> Keys -> Generate auth key, tagged `tag:homelab` (the tag rides with the key, so no `--advertise-tags` needed on the container).
 3. DNS -> HTTPS Certificates -> enabled (required for `tailscale serve` to auto-issue `*.ts.net` certs).
-4. Set `TS_AUTHKEY` in `~/homelab/.env` on `alfred`.
+4. Set `TS_AUTHKEY` in `~/homelab/.env` on `batcave`.
 
 Note: an OAuth client (`TS_CLIENT_ID`/`TS_CLIENT_SECRET`) was tried first and consistently hit `403: calling actor does not have enough permissions to perform this function` on every `tailscale up` attempt, even with the OAuth client correctly scoped (`tag:homelab`, Core `Write`) and `tagOwners` correct -- root cause not identified, switched to a plain auth key instead per the blog guide.
 
 ## Verifying the sidecar
 
-Over SSH on `alfred`:
+Over SSH on `batcave`:
 
 - `podman logs whoami-whoami-ts-1` -- sidecar registers as a tailnet node, no restart loop
 - `podman exec whoami-whoami-ts-1 tailscale status` -- shows itself Active
