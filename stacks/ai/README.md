@@ -29,6 +29,8 @@ Everything is declarative, nothing is configured in the UI:
 
 Changing `LIBRECHAT_CREDS_KEY`/`LIBRECHAT_CREDS_IV` makes stored credentials unreadable; changing the JWT secrets logs everyone out.
 
+LibreChat reads `librechat.yaml` only at start, and `homelab-sync` doesn't recreate the container when only that file changes. After pushing a change to it, run `podman restart ai-librechat-1` on `batcave`.
+
 When bumping the LibreChat image, also bump `version` in `librechat.yaml` to the one in `librechat.example.yaml` at the new tag.
 
 ### Accounts
