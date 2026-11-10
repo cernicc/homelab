@@ -27,8 +27,11 @@ endpoints:
       baseURL: https://opencode.ai/zen/go/v1
       # Go rejects requests without a stable per-conversation session ID
       # (400 MissingSessionID) and asks clients for their own user agent.
+      # The conversation ID placeholder resolves to "" when the request body
+      # has none (e.g. a new chat's first message), and an empty header is
+      # rejected too, so the user ID keeps the value non-empty.
       headers:
-        x-opencode-session: "{{LIBRECHAT_BODY_CONVERSATIONID}}"
+        x-opencode-session: "{{LIBRECHAT_USER_ID}}-{{LIBRECHAT_BODY_CONVERSATIONID}}"
         User-Agent: librechat/0.8.8
       models:
         # Fallback only; the live list comes from /models.
