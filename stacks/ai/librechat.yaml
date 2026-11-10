@@ -1,0 +1,43 @@
+# LibreChat configuration, mounted read-only at /app/librechat.yaml.
+# Reference: https://www.librechat.ai/docs/configuration/librechat_yaml
+# Secrets never go here; reference env vars set in docker-compose.yml instead.
+
+# Config schema version shipped with LibreChat v0.8.8. Bump together with the
+# image (see librechat.example.yaml at the new tag).
+version: 1.3.17
+
+cache: true
+
+interface:
+  # MCP servers are declared below, not added in the UI.
+  mcpServers:
+    use: true
+    create: false
+    share: false
+    public: false
+
+registration:
+  socialLogins: []
+
+endpoints:
+  custom:
+    # OpenCode Go (subscription): https://opencode.ai/docs/go
+    - name: OpenCode Go
+      apiKey: "${OPENCODE_API_KEY}"
+      baseURL: https://opencode.ai/zen/go/v1
+      models:
+        # Fallback only; the live list comes from /models.
+        default: ["glm-5.3"]
+        fetch: true
+      titleConvo: true
+      titleModel: current_model
+      modelDisplayLabel: OpenCode Go
+
+# MCP servers available to every user. The Alfred knowledge-graph server is
+# planned (see the Alfred repo, research/knowledge-graph-mcp-server) and will
+# be added here once it runs, e.g.:
+#
+# mcpServers:
+#   alfred:
+#     type: streamable-http
+#     url: https://alfred.<tailnet-name>.ts.net/mcp
