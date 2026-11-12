@@ -98,6 +98,10 @@ services:
     image: cr.agentgateway.dev/agentgateway:v1.7.0
     restart: unless-stopped
     command: ["-f", "/config.yaml"]
+    # The image's own user (65532) can't write agentgateway-data: under
+    # keep-id a new volume belongs to rok (uid 1001), so run as rok. (Podman's
+    # :U volume flag would chown it instead, but docker-compose drops it.)
+    user: "1001:1001"
     environment:
       OPENCODE_API_KEY: ${OPENCODE_API_KEY:?set in ~/homelab/.env}
       AGENTGATEWAY_LIBRECHAT_API_KEY: ${AGENTGATEWAY_LIBRECHAT_API_KEY:?set in ~/homelab/.env}
@@ -105,9 +109,7 @@ services:
       - ai
     volumes:
       - ./agentgateway.yaml:/config.yaml:ro,Z
-      # :U chowns the volume to the image's nonroot user (65532); under
-      # keep-id it would otherwise belong to rok and SQLite can't open it.
-      - agentgateway-data:/data:U
+      - agentgateway-data:/data
     logging: *logging
 
   # Tailnet ingress for the agentgateway UI and API at
