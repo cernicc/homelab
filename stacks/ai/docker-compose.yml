@@ -105,7 +105,9 @@ services:
       - ai
     volumes:
       - ./agentgateway.yaml:/config.yaml:ro,Z
-      - agentgateway-data:/data
+      # :U chowns the volume to the image's nonroot user (65532); under
+      # keep-id it would otherwise belong to rok and SQLite can't open it.
+      - agentgateway-data:/data:U
     logging: *logging
 
   # Tailnet ingress for the agentgateway UI and API at
