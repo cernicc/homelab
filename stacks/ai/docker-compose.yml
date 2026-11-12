@@ -49,6 +49,7 @@ services:
     depends_on:
       - mongodb
       - meilisearch
+      - agentgateway
     environment:
       # Loopback only: the sidecar's `tailscale serve` is the one way in, so
       # plain HTTP on :3080 isn't reachable on the container's tailnet IP.
@@ -76,9 +77,9 @@ services:
       ALLOW_SOCIAL_LOGIN: "false"
       ALLOW_EMAIL_LOGIN: "true"
       ALLOW_PASSWORD_RESET: "false"
-      # OpenCode Go subscription, declared as a custom endpoint in
-      # librechat.yaml, which reads the key from here.
-      OPENCODE_API_KEY: ${OPENCODE_API_KEY:?set in ~/homelab/.env}
+      # LibreChat's key for agentgateway, which holds the OpenCode Go key
+      # itself. Read by the endpoint in librechat.yaml.
+      AGENTGATEWAY_LIBRECHAT_API_KEY: ${AGENTGATEWAY_LIBRECHAT_API_KEY:?set in ~/homelab/.env}
     volumes:
       - ./librechat.yaml:/app/librechat.yaml:ro,Z
       - librechat-data:/app/data
@@ -86,6 +87,45 @@ services:
       - librechat-images:/app/client/public/images
       - librechat-logs:/app/logs
     logging: *logging
+
+  # LLM (and later MCP) gateway in front of OpenCode Go: holds the upstream
+  # key, gives each client its own gateway key, logs requests, and serves a
+  # web UI. Config in agentgateway.yaml. Unlike librechat, it has its own
+  # network namespace on `ai` (LibreChat calls http://agentgateway:4000/v1),
+  # so plain HTTP :4000 never reaches the tailnet; the sidecar below is the
+  # one way in from there.
+  agentgateway:
+    image: cr.agentgateway.dev/agentgateway:v1.7.0
+    restart: unless-stopped
+    command: ["-f", "/config.yaml"]
+    environment:
+      OPENCODE_API_KEY: ${OPENCODE_API_KEY:?set in ~/homelab/.env}
+      AGENTGATEWAY_LIBRECHAT_API_KEY: ${AGENTGATEWAY_LIBRECHAT_API_KEY:?set in ~/homelab/.env}
+    networks:
+      - ai
+    volumes:
+      - ./agentgateway.yaml:/config.yaml:ro,Z
+      - agentgateway-data:/data
+    logging: *logging
+
+  # Tailnet ingress for the agentgateway UI and API at
+  # https://agentgateway.<tailnet-name>.ts.net. Proxies to agentgateway over
+  # the `ai` network rather than sharing its namespace (see above).
+  agentgateway-ts:
+    <<: *ts-sidecar
+    hostname: agentgateway
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY:?set in ~/homelab/.env}
+      - TS_HOSTNAME=agentgateway
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_USERSPACE=false
+      - TS_DEBUG_FIREWALL_MODE=nftables
+      - TS_SERVE_CONFIG=/config/serve.json
+    volumes:
+      - ./ts-config/agentgateway:/config:ro,Z
+      - agentgateway-ts-state:/var/lib/tailscale
+    networks:
+      - ai
 
   # Only on the `ai` network, never on the tailnet; --noauth is safe because
   # nothing but LibreChat can reach it.
@@ -126,3 +166,5 @@ volumes:
   librechat-logs:
   mongodb-data:
   meilisearch-data:
+  agentgateway-data:
+  agentgateway-ts-state:

@@ -22,9 +22,11 @@ registration:
 endpoints:
   custom:
     # OpenCode Go (subscription): https://opencode.ai/docs/go
+    # Through agentgateway (see agentgateway.yaml), which adds the OpenCode
+    # key and decides which models are offered.
     - name: OpenCode Go
-      apiKey: "${OPENCODE_API_KEY}"
-      baseURL: https://opencode.ai/zen/go/v1
+      apiKey: "${AGENTGATEWAY_LIBRECHAT_API_KEY}"
+      baseURL: http://agentgateway:4000/v1
       # Go rejects requests without a stable per-conversation session ID
       # (400 MissingSessionID) and asks clients for their own user agent.
       # The conversation ID placeholder resolves to "" when the request body
@@ -34,7 +36,7 @@ endpoints:
         x-opencode-session: "{{LIBRECHAT_USER_ID}}-{{LIBRECHAT_BODY_CONVERSATIONID}}"
         User-Agent: librechat/0.8.8
       models:
-        # Fallback only; the live list comes from /models.
+        # Fallback only; the live list comes from agentgateway's /models.
         default: ["glm-5.3"]
         fetch: true
       titleConvo: true

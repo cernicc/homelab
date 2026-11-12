@@ -4,7 +4,7 @@ AI tooling.
 
 ## LibreChat
 
-[LibreChat](https://www.librechat.ai/) — self-hosted chat UI, used with the [OpenCode Go](https://opencode.ai/docs/go) subscription from any device on the tailnet. Fronted by a `librechat-ts` Tailscale sidecar (see [stacks/whoami/README.md](../whoami/README.md) for the pattern) at `https://chat.<tailnet-name>.ts.net`.
+[LibreChat](https://www.librechat.ai/) — self-hosted chat UI, used with the [OpenCode Go](https://opencode.ai/docs/go) subscription from any device on the tailnet. Fronted by a `librechat-ts` Tailscale sidecar (see [stacks/whoami/README.md](../whoami/README.md) for the pattern) at `https://chat.<tailnet-name>.ts.net`. Model calls go through [agentgateway](#agentgateway), not straight to OpenCode.
 
 Containers:
 
@@ -18,11 +18,10 @@ There is no RAG API / vector DB yet, so file search over uploaded documents is n
 
 Everything is declarative, nothing is configured in the UI:
 
-- [`docker-compose.yml`](docker-compose.yml) — env vars: domain, auth, the OpenCode API key.
-- [`librechat.yaml`](librechat.yaml) — interface options, the OpenCode Go endpoint (models fetched live from its `/models`), and MCP servers. Users can't add MCP servers in the UI (`interface.mcpServers.create: false`).
+- [`docker-compose.yml`](docker-compose.yml) — env vars: domain, auth, LibreChat's agentgateway key.
+- [`librechat.yaml`](librechat.yaml) — interface options, the OpenCode Go endpoint (pointed at `http://agentgateway:4000/v1`, models fetched live from agentgateway's `/models`), and MCP servers. Users can't add MCP servers in the UI (`interface.mcpServers.create: false`).
 - `~/homelab/.env` on `batcave` — secrets:
   - `LIBRECHAT_DOMAIN` — `https://chat.<tailnet-name>.ts.net`
-  - `OPENCODE_API_KEY` — the OpenCode Go API key
   - `LIBRECHAT_CREDS_KEY` — `openssl rand -hex 32`
   - `LIBRECHAT_CREDS_IV` — `openssl rand -hex 16`
   - `LIBRECHAT_JWT_SECRET`, `LIBRECHAT_JWT_REFRESH_SECRET`, `LIBRECHAT_MEILI_MASTER_KEY` — `openssl rand -hex 32` each
@@ -47,3 +46,39 @@ The first user created becomes the admin.
 
 - `podman logs ai-librechat-1` — connects to MongoDB and Meilisearch, no config validation errors
 - `https://chat.<tailnet-name>.ts.net` — login page with a valid cert; after logging in, the OpenCode Go models are listed
+
+## agentgateway
+
+[agentgateway](https://agentgateway.dev/) — LLM (and later MCP) gateway between clients and OpenCode Go. It holds the OpenCode key, gives each client its own gateway key, decides which models are offered, logs every request (tokens, latency) to SQLite, and serves a web UI. Fronted by an `agentgateway-ts` Tailscale sidecar at `https://agentgateway.<tailnet-name>.ts.net` (UI at `/ui`, OpenAI-compatible API at `/v1`).
+
+Containers:
+
+- `agentgateway` — the gateway on `:4000`, on the `ai` network. LibreChat reaches it as `http://agentgateway:4000/v1`.
+- `agentgateway-ts` — tailnet ingress. Unlike `librechat-ts`, it doesn't share a namespace with the app: it proxies to `agentgateway:4000` over the `ai` network, so plain HTTP `:4000` is never on the tailnet while LibreChat can still reach it by name.
+
+The admin endpoint (`:15000`, config dump, shutdown) stays on the container's loopback.
+
+### Configuration
+
+- [`agentgateway.yaml`](agentgateway.yaml) — gateway, UI, the OpenCode Go provider, the model list, and client keys. `$VARS` come from the container environment; agentgateway won't start if one is unset. Model and route changes reload live on push; the `config:` block (database, storage) needs `podman restart ai-agentgateway-1`.
+- The UI is read-only (`config.storage.mode: readOnly`): the file in git is the only source of truth.
+- `~/homelab/.env` on `batcave` — secrets:
+  - `OPENCODE_API_KEY` — the OpenCode Go API key; only agentgateway gets it
+  - `AGENTGATEWAY_LIBRECHAT_API_KEY` — LibreChat's gateway key, `openssl rand -hex 32`
+
+The model list is explicit, so new OpenCode Go models don't show up until they're added to `agentgateway.yaml`. Get the current IDs with:
+
+```bash
+curl -s https://opencode.ai/zen/go/v1/models | jq -r '.data[].id'
+```
+
+To give another client (e.g. a coding agent on a laptop) access, add a key under `llm.policies.apiKey.keys` (from a new `.env` variable passed to the container) and point the client at `https://agentgateway.<tailnet-name>.ts.net/v1`.
+
+The UI itself has no login; anyone on the tailnet can open it, the same as the other stacks.
+
+### Verifying
+
+- `podman logs ai-agentgateway-1` — config loaded, listening on `:4000`, no errors about unset variables
+- `https://agentgateway.<tailnet-name>.ts.net/ui` — the UI, with the `opencode-go` provider and models listed
+- `curl -s -H "Authorization: Bearer $AGENTGATEWAY_LIBRECHAT_API_KEY" https://agentgateway.<tailnet-name>.ts.net/v1/models` — the model list; without the header, 401
+- Chat in LibreChat, then check the request appears in the UI's logs. A `400 MissingSessionID` from OpenCode means the gateway isn't passing LibreChat's `x-opencode-session` header through; copy it with a `requestTransformation` on the provider.

@@ -1,0 +1,97 @@
+# yaml-language-server: $schema=https://agentgateway.dev/schema/config
+#
+# agentgateway configuration, mounted read-only at /config.yaml.
+# Reference: https://agentgateway.dev/docs/standalone/latest/reference/configuration/schema/
+# Secrets never go here; $VARS are expanded from the container's environment
+# (set in docker-compose.yml), and agentgateway refuses to start if one is
+# unset.
+#
+# The gateway watches this file and reloads routes/models on change; the
+# `config:` block is read only at start (restart the container for those).
+
+config:
+  # Request logs and LLM analytics for the UI, and the generated MCP session
+  # key. On the agentgateway-data volume.
+  database:
+    url: sqlite:///data/data.db
+  # This file is the source of truth; the UI can look, not edit.
+  storage:
+    mode: readOnly
+
+gateways:
+  default:
+    port: 4000
+
+# Web UI at /ui, reached over the tailnet only (see the agentgateway-ts
+# sidecar).
+ui:
+  gateways: default
+
+llm:
+  gateways: default
+  # /v1/models lists the models below rather than expanding from the
+  # built-in catalog.
+  discovery: disabled
+
+  # Every client needs a gateway key; the upstream OpenCode key never leaves
+  # the gateway. The client's key is stripped before forwarding.
+  policies:
+    apiKey:
+      mode: strict
+      keys:
+        - key: $AGENTGATEWAY_LIBRECHAT_API_KEY
+          metadata:
+            client: librechat
+
+  providers:
+    # OpenCode Go (subscription): https://opencode.ai/docs/go
+    # OpenAI-compatible chat completions under the base URL. Client headers
+    # (LibreChat's x-opencode-session and User-Agent) pass through.
+    - name: opencode-go
+      provider:
+        custom:
+          providerOverride: opencode
+          formats:
+            - type: completions
+      params:
+        apiKey: $OPENCODE_API_KEY
+        baseUrl: https://opencode.ai/zen/go/v1
+
+  # Models clients may use, sent upstream under the same name. Taken from
+  # `curl https://opencode.ai/zen/go/v1/models`; add new ones here.
+  models:
+    - { name: claude-haiku-5-5, provider: { reference: opencode-go } }
+    - { name: deepseek-v4-pro, provider: { reference: opencode-go } }
+    - { name: deepseek-v4.1-flash, provider: { reference: opencode-go } }
+    - { name: gemini-4-argon, provider: { reference: opencode-go } }
+    - { name: glm-5.2, provider: { reference: opencode-go } }
+    - { name: glm-5.3, provider: { reference: opencode-go } }
+    - { name: glm-5.3-flash, provider: { reference: opencode-go } }
+    - { name: gpt-5.6-luna, provider: { reference: opencode-go } }
+    - { name: gpt-6-luna, provider: { reference: opencode-go } }
+    - { name: grok-4.7, provider: { reference: opencode-go } }
+    - { name: hy3, provider: { reference: opencode-go } }
+    - { name: hy4, provider: { reference: opencode-go } }
+    - { name: hy4-preview, provider: { reference: opencode-go } }
+    - { name: kimi-k2.7-code, provider: { reference: opencode-go } }
+    - { name: kimi-k3, provider: { reference: opencode-go } }
+    - { name: kimi-k3.1-pro, provider: { reference: opencode-go } }
+    - { name: longcat-2.0, provider: { reference: opencode-go } }
+    - { name: mimo-v2.6-flash, provider: { reference: opencode-go } }
+    - { name: mimo-v2.6-pro, provider: { reference: opencode-go } }
+    - { name: minimax-m3, provider: { reference: opencode-go } }
+    - { name: minimax-m3.1-flash, provider: { reference: opencode-go } }
+    - { name: qwen3.7-plus, provider: { reference: opencode-go } }
+    - { name: qwen3.8-flash, provider: { reference: opencode-go } }
+    - { name: qwen3.8-max, provider: { reference: opencode-go } }
+    - { name: step-5-preview, provider: { reference: opencode-go } }
+
+# MCP servers can later be federated here and served at
+# http://agentgateway:4000/mcp, e.g.:
+#
+# mcp:
+#   gateways: default
+#   targets:
+#     - name: alfred
+#       mcp:
+#         host: https://alfred.<tailnet-name>.ts.net/mcp
