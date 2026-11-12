@@ -98,10 +98,15 @@ services:
     image: cr.agentgateway.dev/agentgateway:v1.7.0
     restart: unless-stopped
     command: ["-f", "/config.yaml"]
-    # The image's own user (65532) can't write agentgateway-data: under
-    # keep-id a new volume belongs to rok (uid 1001), so run as rok. (Podman's
+    # The image's own user (65532) can't write agentgateway-data: a new volume
+    # belongs to container root, which under rootless podman is the host user
+    # rok. So run as container root, with every capability dropped. (Podman's
     # :U volume flag would chown it instead, but docker-compose drops it.)
-    user: "1001:1001"
+    user: "0:0"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges
     environment:
       OPENCODE_API_KEY: ${OPENCODE_API_KEY:?set in ~/homelab/.env}
       AGENTGATEWAY_LIBRECHAT_API_KEY: ${AGENTGATEWAY_LIBRECHAT_API_KEY:?set in ~/homelab/.env}
