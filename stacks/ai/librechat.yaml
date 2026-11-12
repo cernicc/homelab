@@ -43,6 +43,25 @@ endpoints:
       titleModel: current_model
       modelDisplayLabel: OpenCode Go
 
+# New chats start on this spec, which turns the Memory MCP server on. A spec
+# fixes the model; the full OpenCode Go model list stays in the selector
+# (addedEndpoints), but chats started from it have Memory off until it's
+# turned on under MCP Servers.
+modelSpecs:
+  addedEndpoints:
+    - "OpenCode Go"
+  list:
+    - name: opencode-memory
+      label: GLM 5.3 + Memory
+      description: OpenCode Go glm-5.3 with understory memory turned on
+      # Every new chat starts here, whatever was picked last.
+      default: true
+      preset:
+        endpoint: "OpenCode Go"
+        model: glm-5.3
+      mcpServers:
+        - understory
+
 # LibreChat blocks MCP URLs on private addresses (SSRF protection); allow
 # only agentgateway's port. Hostname entries trust whatever it resolves to.
 mcpSettings:

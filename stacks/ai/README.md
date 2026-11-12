@@ -101,6 +101,7 @@ MCP servers are targets under `mcp:` in [`agentgateway/config.yaml`](agentgatewa
 - `understory` — on the `ai` network only, port 3800. `/mcp` and `/api` require `UNDERSTORY_AUTH_TOKEN`.
 - `understory-ts` — tailnet ingress for the web UI (memory browser, graph view, chat with the memory agent) at `https://understory.<tailnet-name>.ts.net/`, proxying over `ai` like `agentgateway-ts`. The UI asks for `UNDERSTORY_AUTH_TOKEN` before showing anything.
 - In LibreChat it's "Memory" under MCP Servers in the composer. One memory is shared by every LibreChat user.
+- New chats start on the "GLM 5.3 + Memory" model spec (`modelSpecs` in `librechat.yaml`, `default: true`), which turns Memory on. Picking another model from the OpenCode Go list starts a chat with Memory off; turn it on under MCP Servers.
 - The image has no releases, only `latest` and per-commit `sha-*` tags, so it's pinned to a commit tag.
 
 Verifying:
