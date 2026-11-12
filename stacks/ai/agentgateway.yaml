@@ -49,6 +49,11 @@ llm:
         - key: $AGENTGATEWAY_LIBRECHAT_API_KEY
           metadata:
             client: librechat
+        # understory's memory agent: one model, so its usage stays predictable.
+        - key: $AGENTGATEWAY_UNDERSTORY_API_KEY
+          metadata:
+            client: understory
+          allowedModels: [glm-5.3]
 
   providers:
     # OpenCode Go (subscription): https://opencode.ai/docs/go
@@ -63,6 +68,13 @@ llm:
       params:
         apiKey: $OPENCODE_API_KEY
         baseUrl: https://opencode.ai/zen/go/v1
+      defaults:
+        # Go rejects requests without x-opencode-session (400
+        # MissingSessionID). LibreChat sends one per conversation; clients
+        # that don't (understory) get their key's client name instead.
+        requestTransformation:
+          set:
+            x-opencode-session: default(request.headers["x-opencode-session"], apiKey.client)
 
   # Models clients may use, sent upstream under the same name. Taken from
   # `curl https://opencode.ai/zen/go/v1/models`; add new ones here.
@@ -93,12 +105,24 @@ llm:
     - { name: qwen3.8-max, provider: { reference: opencode-go } }
     - { name: step-5-preview, provider: { reference: opencode-go } }
 
-# MCP servers can later be federated here and served at
-# http://agentgateway:4000/mcp, e.g.:
-#
-# mcp:
-#   gateways: default
-#   targets:
-#     - name: alfred
-#       mcp:
-#         host: https://alfred.<tailnet-name>.ts.net/mcp
+# MCP servers, multiplexed into one endpoint at http://agentgateway:4000/mcp
+# (and https://agentgateway.<tailnet-name>.ts.net/mcp). With more than one
+# target, tool names get the target's name as a prefix.
+mcp:
+  gateways: default
+  # Same client keys as the LLM routes.
+  policies:
+    apiKey:
+      mode: strict
+      keys:
+        - key: $AGENTGATEWAY_LIBRECHAT_API_KEY
+          metadata:
+            client: librechat
+  targets:
+    # understory memory (the `understory` container in this stack).
+    - name: understory
+      mcp:
+        host: http://understory:3800/mcp
+      policies:
+        backendAuth:
+          key: $UNDERSTORY_AUTH_TOKEN

@@ -86,7 +86,7 @@ Note: no ingress is currently configured — Traefik was removed and nothing fro
 
 Stacks are managed as systemd user services via the `docker-compose@.service` template. Each stack maps to a directory under `stacks/` containing a `docker-compose.yml`.
 
-- `ai` — LibreChat and agentgateway, see [stack README](stacks/ai/README.md)
+- `ai` — LibreChat, agentgateway and understory, see [stack README](stacks/ai/README.md)
 - `media`
 - `observability`
 - `stirling-pdf` — see [stack README](stacks/stirling-pdf/README.md)

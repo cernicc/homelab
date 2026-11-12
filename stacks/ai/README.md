@@ -66,6 +66,8 @@ The admin endpoint (`:15000`, config dump, shutdown) stays on the container's lo
   - `OPENCODE_API_KEY` — the OpenCode Go API key; only agentgateway gets it
   - `AGENTGATEWAY_LIBRECHAT_API_KEY` — LibreChat's gateway key, `openssl rand -hex 32`
   - `AGENTGATEWAY_SESSION_KEY` — encrypts the MCP session IDs the gateway hands to clients, `openssl rand -hex 32`. Changing it only ends open MCP sessions.
+  - `AGENTGATEWAY_UNDERSTORY_API_KEY` — understory's gateway key (limited to `glm-5.3`), `openssl rand -hex 32`
+  - `UNDERSTORY_AUTH_TOKEN` — what agentgateway sends to understory's `/mcp`, `openssl rand -hex 32`
 
 The model list is explicit, so new OpenCode Go models don't show up until they're added to `agentgateway.yaml`. Get the current IDs with:
 
@@ -84,4 +86,23 @@ The UI itself has no login; anyone on the tailnet can open it, the same as the o
 - `curl -s -H "Authorization: Bearer $AGENTGATEWAY_LIBRECHAT_API_KEY" https://agentgateway.<tailnet-name>.ts.net/v1/models` — the model list; without the header, 401
 - Chat in LibreChat, then check the request appears in the UI's logs (or `podman logs ai-agentgateway-1`). The gateway passes client headers through, so LibreChat's `x-opencode-session` reaches OpenCode; a `400 MissingSessionID` means LibreChat stopped sending it.
 
-MCP isn't configured yet; when it is, servers go under `mcp:` in `agentgateway.yaml` (there's a commented example). Session IDs are already encrypted with `AGENTGATEWAY_SESSION_KEY`, so the "no session key configured" warning shouldn't appear in the logs.
+MCP session IDs are encrypted with `AGENTGATEWAY_SESSION_KEY`, so the "no session key configured" warning shouldn't appear in the logs.
+
+### MCP
+
+MCP servers are targets under `mcp:` in [`agentgateway.yaml`](agentgateway.yaml), multiplexed into one endpoint, `http://agentgateway:4000/mcp` (or `https://agentgateway.<tailnet-name>.ts.net/mcp` from the tailnet). Clients use their gateway key, and the gateway adds each server's own credentials. LibreChat lists it under `mcpServers` in [`librechat.yaml`](librechat.yaml), with `mcpSettings.allowedAddresses` letting it past LibreChat's block on private addresses.
+
+## understory
+
+[understory](https://github.com/thecodacus/understory) — long-term memory for agents, kept as plain-markdown concepts that link into a graph, in the `understory-memory` volume. Every change is a git commit in that volume (`GIT_AUTOCOMMIT`). It exposes `memory_query`, `memory_add`, `memory_update`, `memory_status` and `memory_maintain`, and each call runs understory's own LLM agent, which uses `glm-5.3` through agentgateway on its own key.
+
+- `understory` — on the `ai` network only, port 3800. `/mcp` and `/api` require `UNDERSTORY_AUTH_TOKEN`, which only agentgateway has.
+- In LibreChat it's "Memory" under MCP Servers in the composer. One memory is shared by every LibreChat user.
+- The image has no releases, only `latest` and per-commit `sha-*` tags, so it's pinned to a commit tag.
+- Its web UI (graph view, chat) isn't exposed.
+
+Verifying:
+
+- `podman logs ai-understory-1` — listening on 3800, no auth or LLM errors
+- `podman logs ai-agentgateway-1` — no MCP target errors; understory's own model calls show up as `/v1/chat/completions` requests for `glm-5.3`
+- In LibreChat, turn on Memory, tell it something to remember, and ask about it in a new chat

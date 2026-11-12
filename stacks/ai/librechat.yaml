@@ -43,11 +43,25 @@ endpoints:
       titleModel: current_model
       modelDisplayLabel: OpenCode Go
 
-# MCP servers available to every user. The Alfred knowledge-graph server is
-# planned (see the Alfred repo, research/knowledge-graph-mcp-server) and will
-# be added here once it runs, e.g.:
-#
-# mcpServers:
-#   alfred:
-#     type: streamable-http
-#     url: https://alfred.<tailnet-name>.ts.net/mcp
+# LibreChat blocks MCP URLs on private addresses (SSRF protection); allow
+# only agentgateway's port. Hostname entries trust whatever it resolves to.
+mcpSettings:
+  allowedAddresses:
+    - "agentgateway:4000"
+
+# MCP servers available to every user. All of them go through agentgateway's
+# /mcp (see agentgateway.yaml), which adds each server's own credentials.
+# Users turn them on per chat under MCP Servers in the composer.
+mcpServers:
+  understory:
+    title: Memory
+    description: Long-term memory in plain markdown (understory)
+    type: streamable-http
+    url: http://agentgateway:4000/mcp
+    headers:
+      Authorization: "Bearer ${AGENTGATEWAY_LIBRECHAT_API_KEY}"
+    requiresOAuth: false
+    # Each memory tool call runs understory's own agent, which takes a while.
+    timeout: 300000
+    # understory sends an overview of the memory as server instructions.
+    serverInstructions: true
