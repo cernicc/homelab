@@ -68,7 +68,7 @@ services:
           - jellyfin
 
   jellyfin:
-    image: lscr.io/linuxserver/jellyfin:12.4ubu2604-ls58
+    image: lscr.io/linuxserver/jellyfin:12.4ubu2604-ls59
     restart: unless-stopped
     network_mode: service:jellyfin-ts
     environment:
@@ -308,7 +308,7 @@ services:
           - seerr
 
   seerr:
-    image: ghcr.io/seerr-team/seerr:v3.5.1
+    image: ghcr.io/seerr-team/seerr:v3.5.2
     init: true
     restart: unless-stopped
     network_mode: service:seerr-ts
@@ -451,7 +451,7 @@ services:
   # Only on the internal `grimmory-db` network: unreachable from the `media`
   # network, and no route to the internet.
   grimmory-db:
-    image: lscr.io/linuxserver/mariadb:11.8.9-r0-ls239
+    image: lscr.io/linuxserver/mariadb:11.8.9-r0-ls240
     restart: unless-stopped
     environment:
       <<: *media-env

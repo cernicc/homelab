@@ -196,7 +196,7 @@ services:
   # Only on `librechat-db`, never on the tailnet or `ai`; --noauth is safe
   # because nothing but LibreChat can reach it.
   mongodb:
-    image: mongo:8.0.20
+    image: mongo:8.0.38
     restart: unless-stopped
     command: mongod --noauth
     networks:
