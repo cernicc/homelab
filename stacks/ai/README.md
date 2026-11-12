@@ -81,4 +81,6 @@ The UI itself has no login; anyone on the tailnet can open it, the same as the o
 - `podman logs ai-agentgateway-1` — config loaded, listening on `:4000`, no errors about unset variables
 - `https://agentgateway.<tailnet-name>.ts.net/ui` — the UI, with the `opencode-go` provider and models listed
 - `curl -s -H "Authorization: Bearer $AGENTGATEWAY_LIBRECHAT_API_KEY" https://agentgateway.<tailnet-name>.ts.net/v1/models` — the model list; without the header, 401
-- Chat in LibreChat, then check the request appears in the UI's logs. A `400 MissingSessionID` from OpenCode means the gateway isn't passing LibreChat's `x-opencode-session` header through; copy it with a `requestTransformation` on the provider.
+- Chat in LibreChat, then check the request appears in the UI's logs (or `podman logs ai-agentgateway-1`). The gateway passes client headers through, so LibreChat's `x-opencode-session` reaches OpenCode; a `400 MissingSessionID` means LibreChat stopped sending it.
+
+MCP isn't configured yet. Before adding it, set `config.session.key` (from a new `.env` variable): the config file is read-only, so the gateway logs "no session key configured" and MCP session IDs would be unencrypted.
