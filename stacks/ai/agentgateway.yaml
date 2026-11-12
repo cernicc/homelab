@@ -126,3 +126,7 @@ mcp:
       policies:
         backendAuth:
           key: $UNDERSTORY_AUTH_TOKEN
+        # Each tool call runs understory's own LLM agent; the default 10s
+        # backend timeout cuts it off. Matches LibreChat's MCP timeout.
+        http:
+          requestTimeout: 5m
