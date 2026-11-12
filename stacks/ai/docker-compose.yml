@@ -110,6 +110,7 @@ services:
     environment:
       OPENCODE_API_KEY: ${OPENCODE_API_KEY:?set in ~/homelab/.env}
       AGENTGATEWAY_LIBRECHAT_API_KEY: ${AGENTGATEWAY_LIBRECHAT_API_KEY:?set in ~/homelab/.env}
+      AGENTGATEWAY_SESSION_KEY: ${AGENTGATEWAY_SESSION_KEY:?set in ~/homelab/.env}
     networks:
       - ai
     volumes:

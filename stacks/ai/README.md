@@ -65,6 +65,7 @@ The admin endpoint (`:15000`, config dump, shutdown) stays on the container's lo
 - `~/homelab/.env` on `batcave` — secrets:
   - `OPENCODE_API_KEY` — the OpenCode Go API key; only agentgateway gets it
   - `AGENTGATEWAY_LIBRECHAT_API_KEY` — LibreChat's gateway key, `openssl rand -hex 32`
+  - `AGENTGATEWAY_SESSION_KEY` — encrypts the MCP session IDs the gateway hands to clients, `openssl rand -hex 32`. Changing it only ends open MCP sessions.
 
 The model list is explicit, so new OpenCode Go models don't show up until they're added to `agentgateway.yaml`. Get the current IDs with:
 
@@ -83,4 +84,4 @@ The UI itself has no login; anyone on the tailnet can open it, the same as the o
 - `curl -s -H "Authorization: Bearer $AGENTGATEWAY_LIBRECHAT_API_KEY" https://agentgateway.<tailnet-name>.ts.net/v1/models` — the model list; without the header, 401
 - Chat in LibreChat, then check the request appears in the UI's logs (or `podman logs ai-agentgateway-1`). The gateway passes client headers through, so LibreChat's `x-opencode-session` reaches OpenCode; a `400 MissingSessionID` means LibreChat stopped sending it.
 
-MCP isn't configured yet. Before adding it, set `config.session.key` (from a new `.env` variable): the config file is read-only, so the gateway logs "no session key configured" and MCP session IDs would be unencrypted.
+MCP isn't configured yet; when it is, servers go under `mcp:` in `agentgateway.yaml` (there's a commented example). Session IDs are already encrypted with `AGENTGATEWAY_SESSION_KEY`, so the "no session key configured" warning shouldn't appear in the logs.

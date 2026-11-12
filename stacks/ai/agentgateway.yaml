@@ -11,13 +11,19 @@
 # `config:` block is read only at start (restart the container for those).
 
 config:
-  # Request logs and LLM analytics for the UI, and the generated MCP session
-  # key. On the agentgateway-data volume.
+  # Request logs and LLM analytics for the UI. On the agentgateway-data
+  # volume.
   database:
     url: sqlite:///data/data.db
   # This file is the source of truth; the UI can look, not edit.
   storage:
     mode: readOnly
+  # Encrypts the MCP session IDs handed to clients (AES-256-GCM). Without
+  # it, they carry session state in the clear: the gateway can't save a
+  # generated key to this read-only file. Changing it only ends open MCP
+  # sessions; clients reconnect.
+  session:
+    key: $AGENTGATEWAY_SESSION_KEY
 
 gateways:
   default:
