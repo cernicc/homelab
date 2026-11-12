@@ -9,8 +9,10 @@ AI tooling.
 Containers:
 
 - `librechat` — the app, listening on loopback `:3080` inside the sidecar's network namespace.
-- `mongodb` — conversations, users, settings. Only on the stack's `ai` network.
-- `meilisearch` — conversation search. Only on the `ai` network.
+- `mongodb` — conversations, users, settings. Only on the `librechat-db` network.
+- `meilisearch` — conversation search. Only on `librechat-db`.
+
+`librechat-ts` is on two networks: `librechat-db` for the databases and `ai` for agentgateway. Nothing else in the stack joins `librechat-db`, so the gateway, understory and the other sidecars can't reach the unauthenticated MongoDB.
 
 There is no RAG API / vector DB yet, so file search over uploaded documents is not available.
 
@@ -60,7 +62,7 @@ The admin endpoint (`:15000`, config dump, shutdown) stays on the container's lo
 
 ### Configuration
 
-- [`agentgateway.yaml`](agentgateway.yaml) — gateway, UI, the OpenCode Go provider, the model list, and client keys. Dollar-prefixed names come from the container environment, even in comments, and agentgateway won't start if one is unset. Model and route changes reload live on push; the `config:` block (database, storage) needs `podman restart ai-agentgateway-1`.
+- [`agentgateway/config.yaml`](agentgateway/config.yaml) — gateway, UI, the OpenCode Go provider, the model list, and client keys. Dollar-prefixed names come from the container environment, even in comments, and agentgateway won't start if one is unset. The `agentgateway` directory is mounted rather than the file, so model, route and MCP changes reload live on push; the `config:` block (database, storage) needs `podman restart ai-agentgateway-1`.
 - The UI is read-only (`config.storage.mode: readOnly`): the file in git is the only source of truth.
 - `~/homelab/.env` on `batcave` — secrets:
   - `OPENCODE_API_KEY` — the OpenCode Go API key; only agentgateway gets it
@@ -69,7 +71,7 @@ The admin endpoint (`:15000`, config dump, shutdown) stays on the container's lo
   - `AGENTGATEWAY_UNDERSTORY_API_KEY` — understory's gateway key (limited to `glm-5.3`), `openssl rand -hex 32`
   - `UNDERSTORY_AUTH_TOKEN` — what agentgateway sends to understory's `/mcp`, `openssl rand -hex 32`
 
-The model list is explicit, so new OpenCode Go models don't show up until they're added to `agentgateway.yaml`. Get the current IDs with:
+The model list is explicit, so new OpenCode Go models don't show up until they're added to `agentgateway/config.yaml`. Get the current IDs with:
 
 ```bash
 curl -s https://opencode.ai/zen/go/v1/models | jq -r '.data[].id'
@@ -90,16 +92,16 @@ MCP session IDs are encrypted with `AGENTGATEWAY_SESSION_KEY`, so the "no sessio
 
 ### MCP
 
-MCP servers are targets under `mcp:` in [`agentgateway.yaml`](agentgateway.yaml), multiplexed into one endpoint, `http://agentgateway:4000/mcp` (or `https://agentgateway.<tailnet-name>.ts.net/mcp` from the tailnet). Clients use their gateway key, and the gateway adds each server's own credentials. LibreChat lists it under `mcpServers` in [`librechat.yaml`](librechat.yaml), with `mcpSettings.allowedAddresses` letting it past LibreChat's block on private addresses.
+MCP servers are targets under `mcp:` in [`agentgateway/config.yaml`](agentgateway/config.yaml), multiplexed into one endpoint, `http://agentgateway:4000/mcp` (or `https://agentgateway.<tailnet-name>.ts.net/mcp` from the tailnet). Clients use their gateway key, and the gateway adds each server's own credentials. LibreChat lists it under `mcpServers` in [`librechat.yaml`](librechat.yaml), with `mcpSettings.allowedAddresses` letting it past LibreChat's block on private addresses.
 
 ## understory
 
 [understory](https://github.com/thecodacus/understory) — long-term memory for agents, kept as plain-markdown concepts that link into a graph, in the `understory-memory` volume. Every change is a git commit in that volume (`GIT_AUTOCOMMIT`). It exposes `memory_query`, `memory_add`, `memory_update`, `memory_status` and `memory_maintain`, and each call runs understory's own LLM agent, which uses `glm-5.3` through agentgateway on its own key.
 
-- `understory` — on the `ai` network only, port 3800. `/mcp` and `/api` require `UNDERSTORY_AUTH_TOKEN`, which only agentgateway has.
+- `understory` — on the `ai` network only, port 3800. `/mcp` and `/api` require `UNDERSTORY_AUTH_TOKEN`.
+- `understory-ts` — tailnet ingress for the web UI (memory browser, graph view, chat with the memory agent) at `https://understory.<tailnet-name>.ts.net/`, proxying over `ai` like `agentgateway-ts`. The UI asks for `UNDERSTORY_AUTH_TOKEN` before showing anything.
 - In LibreChat it's "Memory" under MCP Servers in the composer. One memory is shared by every LibreChat user.
 - The image has no releases, only `latest` and per-commit `sha-*` tags, so it's pinned to a commit tag.
-- Its web UI (graph view, chat) isn't exposed.
 
 Verifying:
 

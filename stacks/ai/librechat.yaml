@@ -22,7 +22,7 @@ registration:
 endpoints:
   custom:
     # OpenCode Go (subscription): https://opencode.ai/docs/go
-    # Through agentgateway (see agentgateway.yaml), which adds the OpenCode
+    # Through agentgateway (see agentgateway/config.yaml), which adds the OpenCode
     # key and decides which models are offered.
     - name: OpenCode Go
       apiKey: "${AGENTGATEWAY_LIBRECHAT_API_KEY}"
@@ -50,7 +50,7 @@ mcpSettings:
     - "agentgateway:4000"
 
 # MCP servers available to every user. All of them go through agentgateway's
-# /mcp (see agentgateway.yaml), which adds each server's own credentials.
+# /mcp (see agentgateway/config.yaml), which adds each server's own credentials.
 # Users turn them on per chat under MCP Servers in the composer.
 mcpServers:
   understory:

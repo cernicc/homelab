@@ -1,6 +1,7 @@
 # yaml-language-server: $schema=https://agentgateway.dev/schema/config
 #
-# agentgateway configuration, mounted read-only at /config.yaml.
+# agentgateway configuration. Its directory is mounted read-only at /config,
+# so changes pulled by git are seen (a single-file mount would not).
 # Reference: https://agentgateway.dev/docs/standalone/latest/reference/configuration/schema/
 # Secrets never go here; dollar-prefixed names are expanded from the
 # container's environment (set in docker-compose.yml), and agentgateway

@@ -19,8 +19,8 @@ services:
   # Tailscale-sidecar ingress -- see stacks/whoami/README.md for the pattern.
   # `librechat` shares this container's network namespace entirely
   # (network_mode: service:librechat-ts), so it has no networking of its own
-  # below. The sidecar joins the `ai` network so LibreChat can reach MongoDB
-  # and Meilisearch by service name.
+  # below. The sidecar joins `librechat-db` so LibreChat can reach MongoDB
+  # and Meilisearch, and `ai` so it can reach agentgateway.
   librechat-ts:
     <<: *ts-sidecar
     hostname: chat
@@ -38,6 +38,7 @@ services:
       ai:
         aliases:
           - librechat
+      librechat-db:
 
   # All configuration is declarative: this file (env vars) plus
   # librechat.yaml (endpoints, interface, MCP servers). Secrets come from
@@ -90,14 +91,14 @@ services:
 
   # LLM (and later MCP) gateway in front of OpenCode Go: holds the upstream
   # key, gives each client its own gateway key, logs requests, and serves a
-  # web UI. Config in agentgateway.yaml. Unlike librechat, it has its own
+  # web UI. Config in agentgateway/config.yaml. Unlike librechat, it has its own
   # network namespace on `ai` (LibreChat calls http://agentgateway:4000/v1),
   # so plain HTTP :4000 never reaches the tailnet; the sidecar below is the
   # one way in from there.
   agentgateway:
     image: cr.agentgateway.dev/agentgateway:v1.7.0
     restart: unless-stopped
-    command: ["-f", "/config.yaml"]
+    command: ["-f", "/config/config.yaml"]
     # The image's own user (65532) can't write agentgateway-data: a new volume
     # belongs to container root, which under rootless podman is the host user
     # rok. So run as container root, with every capability dropped. (Podman's
@@ -116,7 +117,10 @@ services:
     networks:
       - ai
     volumes:
-      - ./agentgateway.yaml:/config.yaml:ro,Z
+      # The directory, not the file: git replaces the file on pull, and a
+      # single-file bind mount would keep showing the old one, so the
+      # gateway's live reload would never see a change.
+      - ./agentgateway:/config:ro,Z
       - agentgateway-data:/data
     logging: *logging
 
@@ -144,7 +148,8 @@ services:
   # understory: plain-markdown memory for agents, as an MCP server
   # (https://github.com/thecodacus/understory). Each tool call runs its own
   # LLM agent, which goes through agentgateway on its own key. Only on `ai`:
-  # LibreChat reaches its tools through agentgateway's /mcp, never directly.
+  # LibreChat reaches its tools through agentgateway's /mcp, never directly,
+  # and its web UI is on the tailnet through understory-ts.
   # The image has no releases, only latest and per-commit sha tags.
   understory:
     image: ghcr.io/thecodacus/understory:sha-7625aa4
@@ -156,7 +161,7 @@ services:
       LLM_API_BASE_URL: http://agentgateway:4000/v1
       LLM_API_KEY: ${AGENTGATEWAY_UNDERSTORY_API_KEY:?set in ~/homelab/.env}
       LLM_API_FORMAT: openai
-      # Must be one the gateway's understory key allows (agentgateway.yaml).
+      # Must be one the gateway's understory key allows (agentgateway/config.yaml).
       LLM_MODEL: glm-5.3
       # Every memory change is a git commit in the bundle.
       GIT_AUTOCOMMIT: "true"
@@ -169,14 +174,33 @@ services:
       - understory-memory:/bundle
     logging: *logging
 
-  # Only on the `ai` network, never on the tailnet; --noauth is safe because
-  # nothing but LibreChat can reach it.
+  # Tailnet ingress for understory's web UI (memory browser, graph, chat) at
+  # https://understory.<tailnet-name>.ts.net. Proxies over `ai` like
+  # agentgateway-ts, and has no `hostname:` for the same reason. The UI asks
+  # for UNDERSTORY_AUTH_TOKEN before showing anything.
+  understory-ts:
+    <<: *ts-sidecar
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY:?set in ~/homelab/.env}
+      - TS_HOSTNAME=understory
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_USERSPACE=false
+      - TS_DEBUG_FIREWALL_MODE=nftables
+      - TS_SERVE_CONFIG=/config/serve.json
+    volumes:
+      - ./ts-config/understory:/config:ro,Z
+      - understory-ts-state:/var/lib/tailscale
+    networks:
+      - ai
+
+  # Only on `librechat-db`, never on the tailnet or `ai`; --noauth is safe
+  # because nothing but LibreChat can reach it.
   mongodb:
     image: mongo:8.0.20
     restart: unless-stopped
     command: mongod --noauth
     networks:
-      - ai
+      - librechat-db
     volumes:
       - mongodb-data:/data/db
     logging: *logging
@@ -192,13 +216,17 @@ services:
       MEILI_NO_ANALYTICS: "true"
       MEILI_ENV: production
     networks:
-      - ai
+      - librechat-db
     volumes:
       - meilisearch-data:/meili_data
     logging: *logging
 
 networks:
+  # LibreChat, agentgateway, understory and their sidecars.
   ai:
+  # LibreChat and its databases only, so nothing else in the stack can reach
+  # the unauthenticated MongoDB.
+  librechat-db:
 
 volumes:
   librechat-ts-state:
@@ -211,3 +239,4 @@ volumes:
   agentgateway-data:
   agentgateway-ts-state:
   understory-memory:
+  understory-ts-state:
