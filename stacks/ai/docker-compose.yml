@@ -120,9 +120,11 @@ services:
   # Tailnet ingress for the agentgateway UI and API at
   # https://agentgateway.<tailnet-name>.ts.net. Proxies to agentgateway over
   # the `ai` network rather than sharing its namespace (see above).
+  # No `hostname:` here: podman registers it as a DNS alias on `ai`, and
+  # `agentgateway` would then also resolve to this sidecar. TS_HOSTNAME alone
+  # sets the tailnet name.
   agentgateway-ts:
     <<: *ts-sidecar
-    hostname: agentgateway
     environment:
       - TS_AUTHKEY=${TS_AUTHKEY:?set in ~/homelab/.env}
       - TS_HOSTNAME=agentgateway
