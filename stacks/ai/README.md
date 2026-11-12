@@ -60,7 +60,7 @@ The admin endpoint (`:15000`, config dump, shutdown) stays on the container's lo
 
 ### Configuration
 
-- [`agentgateway.yaml`](agentgateway.yaml) — gateway, UI, the OpenCode Go provider, the model list, and client keys. `$VARS` come from the container environment; agentgateway won't start if one is unset. Model and route changes reload live on push; the `config:` block (database, storage) needs `podman restart ai-agentgateway-1`.
+- [`agentgateway.yaml`](agentgateway.yaml) — gateway, UI, the OpenCode Go provider, the model list, and client keys. Dollar-prefixed names come from the container environment, even in comments, and agentgateway won't start if one is unset. Model and route changes reload live on push; the `config:` block (database, storage) needs `podman restart ai-agentgateway-1`.
 - The UI is read-only (`config.storage.mode: readOnly`): the file in git is the only source of truth.
 - `~/homelab/.env` on `batcave` — secrets:
   - `OPENCODE_API_KEY` — the OpenCode Go API key; only agentgateway gets it

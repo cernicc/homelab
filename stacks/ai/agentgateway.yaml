@@ -2,9 +2,10 @@
 #
 # agentgateway configuration, mounted read-only at /config.yaml.
 # Reference: https://agentgateway.dev/docs/standalone/latest/reference/configuration/schema/
-# Secrets never go here; $VARS are expanded from the container's environment
-# (set in docker-compose.yml), and agentgateway refuses to start if one is
-# unset.
+# Secrets never go here; dollar-prefixed names are expanded from the
+# container's environment (set in docker-compose.yml), and agentgateway
+# refuses to start if one is unset. That includes comments: never write a
+# dollar sign before a name here unless it's a real variable.
 #
 # The gateway watches this file and reloads routes/models on change; the
 # `config:` block is read only at start (restart the container for those).
