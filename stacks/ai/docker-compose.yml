@@ -206,8 +206,9 @@ services:
     logging: *logging
 
   # Conversation search. Meilisearch can't open data written by another
-  # minor version: before bumping the image, check its upgrade notes (or
-  # drop the volume -- LibreChat re-indexes from MongoDB on start).
+  # minor version on its own; MEILI_EXPERIMENTAL_DUMPLESS_UPGRADE migrates
+  # the data in place on start. If that fails, drop the volume -- LibreChat
+  # re-indexes from MongoDB on start.
   meilisearch:
     image: getmeili/meilisearch:v1.58.0
     restart: unless-stopped
@@ -215,6 +216,7 @@ services:
       MEILI_MASTER_KEY: ${LIBRECHAT_MEILI_MASTER_KEY:?set in ~/homelab/.env}
       MEILI_NO_ANALYTICS: "true"
       MEILI_ENV: production
+      MEILI_EXPERIMENTAL_DUMPLESS_UPGRADE: "true"
     networks:
       - librechat-db
     volumes:
