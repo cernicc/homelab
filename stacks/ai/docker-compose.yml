@@ -61,6 +61,9 @@ services:
       NO_INDEX: "true"
       TZ: Europe/Ljubljana
       CONFIG_PATH: /app/librechat.yaml
+      # One LibreChat container and no Redis: tells the scheduler (v0.8.9+)
+      # it is the only replica, otherwise schedule writes are refused.
+      SCHEDULES_SINGLE_PROCESS: "true"
       MONGO_URI: mongodb://mongodb:27017/LibreChat
       SEARCH: "true"
       MEILI_HOST: http://meilisearch:7700
