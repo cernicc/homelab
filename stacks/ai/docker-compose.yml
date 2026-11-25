@@ -7,7 +7,7 @@ x-logging: &logging
     max-file: "3"
 
 x-ts-sidecar: &ts-sidecar
-  image: tailscale/tailscale:v1.104.4
+  image: tailscale/tailscale:v1.104.7
   restart: unless-stopped
   cap_add:
     - NET_ADMIN
@@ -44,7 +44,7 @@ services:
   # librechat.yaml (endpoints, interface, MCP servers). Secrets come from
   # ~/homelab/.env.
   librechat:
-    image: registry.librechat.ai/librechat-ai/librechat:v0.8.8
+    image: registry.librechat.ai/librechat-ai/librechat:v0.8.9
     restart: unless-stopped
     network_mode: service:librechat-ts
     depends_on:
@@ -196,7 +196,7 @@ services:
   # Only on `librechat-db`, never on the tailnet or `ai`; --noauth is safe
   # because nothing but LibreChat can reach it.
   mongodb:
-    image: mongo:8.0.38
+    image: mongo:9.0.8
     restart: unless-stopped
     command: mongod --noauth
     networks:
@@ -209,7 +209,7 @@ services:
   # minor version: before bumping the image, check its upgrade notes (or
   # drop the volume -- LibreChat re-indexes from MongoDB on start).
   meilisearch:
-    image: getmeili/meilisearch:v1.35.1
+    image: getmeili/meilisearch:v1.58.0
     restart: unless-stopped
     environment:
       MEILI_MASTER_KEY: ${LIBRECHAT_MEILI_MASTER_KEY:?set in ~/homelab/.env}
